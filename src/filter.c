@@ -4,7 +4,7 @@
 *@brief     Various filter designs
 *@author    Ziga Miklosic
 *@date      02.01.2021
-*@version   V0.0.1
+*@version   V1.0.0
 *
 *@section   Description
 *   
@@ -102,7 +102,7 @@ static float32_t filter_cr_calculate_alpha(const float32_t fc, const float32_t f
 /**
 *   Initialize RC filter
 *
-*@Note: Order of RC filter is represented as number of cascaded RC
+* @note Order of RC filter is represented as number of cascaded RC
 *		analog equivalent circuits!
 *
 * @param[in] 	p_filter_inst	- Pointer to RC filter instance
@@ -188,7 +188,15 @@ float32_t filter_rc_update(p_filter_rc_t filter_inst, const float32_t x)
 	return y;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   	Calculate RC alpha
+*
+* @param[in] 	fc		- Cutoff frequency
+* @param[in] 	fs		- Sample frequency
+* @return 		alpha	- RC alpha
+*/
+////////////////////////////////////////////////////////////////////////////////
 static float32_t filter_rc_calculate_alpha(const float32_t fc, const float32_t fs)
 {
 	float32_t alpha = 0.0f;
@@ -202,6 +210,16 @@ static float32_t filter_rc_calculate_alpha(const float32_t fc, const float32_t f
 	return alpha;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   	Change cutoff frequency of filter
+*
+* @param[in] 	filter_inst	- Filter instance
+* @param[in] 	fc			- Cutoff frequency
+* @param[in] 	fs			- Sample frequency
+* @return 		status		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_rc_change_cutoff	(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs)
 {
 	filter_status_t status 	= eFILTER_OK;
@@ -225,13 +243,11 @@ filter_status_t filter_rc_change_cutoff	(p_filter_rc_t filter_inst, const float3
 	return status;
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *   Initialize CR filter
 *
-*@Note: Order of CR filter is represented as number of cascaded CR
+* @note	Order of CR filter is represented as number of cascaded CR
 *		analog equivalent circuits!
 *
 * @param[in] 	p_filter_inst	- Pointer to CR filter instance
@@ -321,7 +337,15 @@ float32_t filter_cr_update(p_filter_cr_t filter_inst, const float32_t x)
 	return y;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   	Calculate CR alpha
+*
+* @param[in] 	fc		- Cutoff frequency
+* @param[in] 	fs		- Sample frequency
+* @return 		alpha	- CR alpha
+*/
+////////////////////////////////////////////////////////////////////////////////
 static float32_t filter_cr_calculate_alpha(const float32_t fc, const float32_t fs)
 {
 	float32_t alpha = 0.0f;
@@ -337,6 +361,16 @@ static float32_t filter_cr_calculate_alpha(const float32_t fc, const float32_t f
 	return alpha;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   	Change cutoff frequency of filter
+*
+* @param[in] 	filter_inst	- Filter instance
+* @param[in] 	fc			- Cutoff frequency
+* @param[in] 	fs			- Sample frequency
+* @return 		status		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_cr_change_cutoff(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs)
 {
 	filter_status_t status 	= eFILTER_OK;
@@ -359,8 +393,6 @@ filter_status_t filter_cr_change_cutoff(p_filter_cr_t filter_inst, const float32
 
 	return status;
 }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -471,8 +503,8 @@ float32_t filter_fir_update(p_filter_fir_t filter_inst, const float32_t x)
 * @param[in] 	p_filter_inst	- Pointer to IIR filter instance
 * @param[in] 	p_pole			- Pointer to IIR pole
 * @param[in] 	p_zero			- Pointer to IIR zeros
-* @param[in] 	a_size			- Number of poles
-* @param[in] 	b_size			- Number of zeros
+* @param[in] 	pole_size		- Number of poles
+* @param[in] 	zero_size		- Number of zeros
 * @return 		status			- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
