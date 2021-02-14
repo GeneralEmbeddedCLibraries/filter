@@ -1002,7 +1002,7 @@ filter_status_t filter_iir_calc_coeff_2nd_notch(const float32_t fc, const float3
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Calculate DC gain of IIR filter based on it's poles & zeros - NEED TO BE TESTED!!!
+*   Calculate DC gain of LPF IIR filter based on it's poles & zeros - NEED TO BE TESTED!!!
 *
 *@note: Equations taken from book:
 *
@@ -1018,7 +1018,7 @@ filter_status_t filter_iir_calc_coeff_2nd_notch(const float32_t fc, const float3
 * @return 		dc_gain		- Gain of filter at zero (DC) frequency
 */
 ////////////////////////////////////////////////////////////////////////////////
-float32_t filter_iir_calc_dc_gain(const float32_t * const p_pole, const float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
+float32_t filter_iir_calc_lpf_gain(const float32_t * const p_pole, const float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
 {
 	float32_t dc_gain 	= NAN;
 	float32_t pole_sum 	= 0.0f;
@@ -1052,6 +1052,44 @@ float32_t filter_iir_calc_dc_gain(const float32_t * const p_pole, const float32_
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
+*   Calculate gain at 0.5 normalize frequency (w=fc/fs) of HPF IIR
+*   filter based on it's poles & zeros
+*
+* @note Normalize frequency of 0.5 is the highest cutoff frequency for HPF
+* 		filter that don't break Nyquist/Shannon sampling theorem.
+*
+* @note Equations taken from book:
+*
+*		"The Scientist and Engineer's Guide to Digital Signal Processing"
+*
+*
+*	G = a0 - a1 + a2 - a3 + ... - an / ( 1 - ( -b1 + b2 - b3 +  ... - bn+1 ))
+*
+* @param[in] 	p_pole		- Pointer to IIR poles
+* @param[in] 	p_zero		- Pointer to IIR zeros
+* @param[in] 	pole_size	- Number of poles
+* @param[in] 	zero_size	- Number of zeros
+* @return 		dc_gain		- Gain of filter at 0.5 normalized frequency
+*/
+////////////////////////////////////////////////////////////////////////////////
+float32_t filter_iir_calc_hpf_gain(const float32_t * const p_pole, const float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
+{
+	float32_t dc_gain 	= NAN;
+	float32_t pole_sum 	= 0.0f;
+	float32_t zero_sum 	= 0.0f;
+	uint32_t i;
+
+	if 	(	( NULL != p_pole )
+		&&	( NULL != p_zero ))
+	{
+
+	}
+
+	return dc_gain;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
 *   Normalize zeros of IIR filter in order to get unity gain at DC frequency. - NEED TO BE TESTED!!!
 *
 *@note: Implementation taken from book:
@@ -1073,7 +1111,7 @@ float32_t filter_iir_calc_dc_gain(const float32_t * const p_pole, const float32_
 * @return 		status		- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t	filter_iir_norm_to_unity_gain(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
+filter_status_t	filter_iir_lpf_norm_zeros_to_unity_gain(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
 {
 	filter_status_t status 		= eFILTER_OK;
 	float32_t		dc_gain		= 0.0f;
