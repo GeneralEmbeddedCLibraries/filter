@@ -85,6 +85,8 @@ filter_status_t filter_iir_calc_coeff_2nd_hpf	(const float32_t fc, const float32
 filter_status_t filter_iir_calc_coeff_2nd_notch	(const float32_t fc, const float32_t r, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero);
 float32_t		filter_iir_calc_dc_gain			(const float32_t * const p_pole, const float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size);
 filter_status_t	filter_iir_norm_to_unity_gain	(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size);
+bool			filter_iir_is_init				(p_filter_iir_t filter_inst);
+filter_status_t filter_iir_get_coeff			(p_filter_iir_t filter_inst, float32_t * const p_pole, float32_t * const p_zero);
 
 #endif // __FILTER_H
 

@@ -25,6 +25,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
+/*
+ * 	TODO: 	- add init guarde to IIR - DONE
+ * 			- add get zeros&poles function to IIR - DONE
+ * 			- test get gain IIR
+ * 			- test normalize to unity gain IIR
+ *
+ */
+
 ////////////////////////////////////////////////////////////////////////////////
 // Includes
 ////////////////////////////////////////////////////////////////////////////////
@@ -593,7 +601,18 @@ float32_t filter_fir_update(p_filter_fir_t filter_inst, const float32_t x)
 	return y;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  	Get FIR filter coefficients
+*
+* @note This functions copy coefficients into place pointing by p_a
+* 		parameter
+*
+* @param[in] 	filter_inst	- Pointer to FIR filter instance
+* @param[out] 	p_a			- Pointer to read coefficient
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 filter_status_t	filter_fir_get_coeff(p_filter_fir_t filter_inst, float32_t * const p_a)
 {
 	filter_status_t status = eFILTER_OK;
@@ -734,34 +753,38 @@ float32_t filter_iir_update(p_filter_iir_t filter_inst, const float32_t x)
 	float32_t y = 0.0f;
 	uint32_t i;
 
+	// Check for instance and success init
 	if ( NULL != filter_inst )
 	{
-		// Add new input to buffer
-		ring_buffer_add_f( filter_inst->p_x, x );
-
-		// Calculate filter value
-		for ( i = 0; i < filter_inst->zero_size; i++ )
+		if ( true == filter_inst->is_init )
 		{
-			y += ( filter_inst->p_zero[i] * ring_buffer_get_f( filter_inst->p_x, (( -i ) - 1 )));
-		}
+			// Add new input to buffer
+			ring_buffer_add_f( filter_inst->p_x, x );
 
-		for ( i = 1; i < filter_inst->pole_size; i++ )
-		{
-			y -= ( filter_inst->p_pole[i] * ring_buffer_get_f( filter_inst->p_y, -i ));
-		}
+			// Calculate filter value
+			for ( i = 0; i < filter_inst->zero_size; i++ )
+			{
+				y += ( filter_inst->p_zero[i] * ring_buffer_get_f( filter_inst->p_x, (( -i ) - 1 )));
+			}
 
-		// Check division by
-		if ( filter_inst->p_pole[0] == 0.0f )
-		{
-			y = NAN;
-		}
-		else
-		{
-			y = ( y / filter_inst->p_pole[0] );
-		}
+			for ( i = 1; i < filter_inst->pole_size; i++ )
+			{
+				y -= ( filter_inst->p_pole[i] * ring_buffer_get_f( filter_inst->p_y, -i ));
+			}
 
-		// Add new output to buffer
-		ring_buffer_add_f( filter_inst->p_y, y );
+			// Check division by
+			if ( filter_inst->p_pole[0] == 0.0f )
+			{
+				y = NAN;
+			}
+			else
+			{
+				y = ( y / filter_inst->p_pole[0] );
+			}
+
+			// Add new output to buffer
+			ring_buffer_add_f( filter_inst->p_y, y );
+		}
 	}
 
 	return y;
@@ -787,8 +810,11 @@ filter_status_t filter_iir_change_coeff(p_filter_iir_t filter_inst, const float3
 		&&	( NULL != p_pole )
 		&&	( NULL != p_zero ))
 	{
-		memcpy( filter_inst->p_pole, p_pole, filter_inst->pole_size * sizeof(float32_t));
-		memcpy( filter_inst->p_zero, p_zero, filter_inst->zero_size * sizeof(float32_t));
+		if ( true == filter_inst->is_init )
+		{
+			memcpy( filter_inst->p_pole, p_pole, filter_inst->pole_size * sizeof(float32_t));
+			memcpy( filter_inst->p_zero, p_zero, filter_inst->zero_size * sizeof(float32_t));
+		}
 	}
 	else
 	{
@@ -1056,6 +1082,65 @@ filter_status_t	filter_iir_norm_to_unity_gain(const float32_t * const p_pole, fl
 			{
 				p_zero[i] = ( p_zero[i] / dc_gain );
 			}
+		}
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  		Get initialization status of filter
+*
+* @param[in] 	filter_inst	- Pointer to IIR filter instance
+* @return 		is_init		- Initialization success flag
+*/
+////////////////////////////////////////////////////////////////////////////////
+bool filter_iir_is_init(p_filter_iir_t filter_inst)
+{
+	bool is_init = false;
+
+	if ( NULL != filter_inst )
+	{
+		is_init = filter_inst->is_init;
+	}
+
+	return is_init;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  	Get IIR filter coefficients
+*
+* @note This functions copy coefficients into place pointing by p_zero
+* 		and p_pole parameter
+*
+* @param[in] 	filter_inst	- Pointer to FIR filter instance
+* @param[out] 	p_zero		- Pointer to read zero coefficient
+* @param[out] 	p_pole		- Pointer to read pole coefficient
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_iir_get_coeff(p_filter_iir_t filter_inst, float32_t * const p_pole, float32_t * const p_zero)
+{
+	filter_status_t status = eFILTER_OK;
+
+	if 	(	( NULL != filter_inst )
+		&&	( NULL != p_pole )
+		&&	( NULL != p_zero ))
+	{
+		if ( true == filter_inst->is_init )
+		{
+			memcpy( p_pole, filter_inst->p_pole, ( filter_inst->pole_size * sizeof(float32_t)));
+			memcpy( p_zero, filter_inst->p_zero, ( filter_inst->zero_size * sizeof(float32_t)));
+		}
+		else
+		{
+			status = eFILTER_ERROR;
 		}
 	}
 	else
