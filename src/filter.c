@@ -338,7 +338,6 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
 			&&	( NULL != (*p_filter_inst)->p_x ))
 		{
 			// Calculate coefficient
-			//(*p_filter_inst)->alpha = (float32_t) (( 1.0f / ( M_TWOPI * fc )) / ( dt + ( 1.0f / ( M_TWOPI * fc ))));
 			(*p_filter_inst)->alpha = filter_cr_calculate_alpha( fc, fs );
 
 			// Store order & fc
@@ -572,6 +571,17 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 /**
 *   Update FIR filter
 *
+*   General FIR differential equation:
+*
+*   	y[n] = SUM( a[i] * x[n-i] ),
+*
+*   	where:
+*   		a - FIR coefficients
+*   		x - Input (un-filtered) signal
+*   		y - Output (filtered) signal
+*
+* @note Above described equation is basically convolution operation.
+*
 * @param[in] 	filter_inst	- Pointer to FIR filter instance
 * @param[in] 	x			- Input value
 * @return 		y			- Output value
@@ -794,7 +804,8 @@ float32_t filter_iir_update(p_filter_iir_t filter_inst, const float32_t x)
 /**
 *   Change IIR filter coefficient on the fly
 *
-*@note: Coefficient size must stay the same, only value is permited to be change!
+*@note: Coefficient size must stay the same, only value is permitted to be
+*		change during runtime!
 *
 * @param[in] 	filter_inst	- Pointer to IIR filter instance
 * @param[in] 	p_pole		- Pointer to new IIR poles
@@ -1056,10 +1067,10 @@ float32_t filter_iir_calc_dc_gain(const float32_t * const p_pole, const float32_
 *		this function math.
 *
 * @param[in] 	p_pole		- Pointer to IIR poles
-* @param[out] 	p_zero		- Pointer to IIR zeros
+* @param[in] 	p_zero		- Pointer to IIR zeros
 * @param[in] 	pole_size	- Number of poles
 * @param[in] 	zero_size	- Number of zeros
-* @return 		dc_gain		- Gain of filter at zero (DC) frequency
+* @return 		status		- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t	filter_iir_norm_to_unity_gain(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
