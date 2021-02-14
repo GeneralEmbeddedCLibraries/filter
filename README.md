@@ -91,14 +91,14 @@ p_filter_iir_t gp_filter_iir = NULL;
 /* 2. Prepare IIR coefficients
 * NOTE: Use iir_filter.py sript or external tool to get IIR coefficients.
 */
-const float32_t gf_iir_a_coef[3] =
+const float32_t gf_iir_poles_coef[3] =
 {
 	1.0f,
 	-1.04377111f,
 	0.27236453f
 };
 
-const float32_t gf_iir_b_coef[3] =
+const float32_t gf_iir_zeros_coef[3] =
 {
 	0.05714836f,
 	0.11429671f,
@@ -108,7 +108,7 @@ const float32_t gf_iir_b_coef[3] =
 /* 
 *   3. Init IIR filter with following parameters
 */ 
-if ( eFILTER_OK != filter_iir_init( &gp_filter_iir, &gf_iir_a_coef, &gf_iir_b_coef, 3, 3 ))
+if ( eFILTER_OK != filter_iir_init( &gp_filter_iir, &gf_iir_poles_coef, &gf_iir_zeros_coef, 3, 3 ))
 {
     // Filter init failed
     // Further actions here...
@@ -123,7 +123,7 @@ loop @SAMPLE_TIME
 ```
 
 #### FIR filters
-FIR filter coefficients can be calculated on this webpage ([t-filter](http://t-filter.engineerjs.com/)).
+FIR filter coefficients can be calculated on T-Filter webpage ([link](http://t-filter.engineerjs.com/)).
 
 ##### Example of usage
 ```C
