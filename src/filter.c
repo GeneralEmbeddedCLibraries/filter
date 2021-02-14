@@ -46,7 +46,9 @@ typedef struct filter_rc_s
 {
 	float32_t *	p_y;		/**<Output of filter + previous values */
 	float32_t	alpha;		/**<Filter smoothing factor */
+	float32_t	fc;			/**<Filter cutoff frequency */
 	uint8_t		order;		/**<Filter order - number of cascaded filter */
+	bool		is_init;	/**<Filter instance initialization success flag */
 } filter_rc_t;
 
 /**
@@ -57,7 +59,9 @@ typedef struct filter_cr_s
 	float32_t * p_y;		/**<Output of filter + previous values */
 	float32_t * p_x;		/**<Input of filter + previous values */
 	float32_t  	alpha;		/**<Filter smoothing factor */
+	float32_t	fc;			/**<Filter cutoff frequency */
 	uint8_t 	order;		/**<Filter order - number of cascaded filter */
+	bool		is_init;	/**<Filter instance initialization success flag */
 } filter_cr_t;
 
 /**
@@ -68,6 +72,7 @@ typedef struct filter_fir_s
 	p_ring_buffer_t   p_x;		/**<Previous values of input filter */
 	float32_t 		* p_a;		/**<Filter coefficients */
 	uint32_t		  order;	/**<Number of FIR filter taps - order of filter */
+	bool			  is_init;	/**<Filter instance initialization success flag */
 } filter_fir_t;
 
 /**
@@ -81,6 +86,7 @@ typedef struct filter_iir_s
 	float32_t		* p_zero;		/**<Filter zeros */
 	uint32_t		  pole_size;	/**<Number of filter poles */
 	uint32_t	 	  zero_size;	/**<Number of filter zeros */
+	bool			  is_init;		/**<Filter instance initialization success flag */
 } filter_iir_t;
 
 
@@ -91,8 +97,8 @@ typedef struct filter_iir_s
 ////////////////////////////////////////////////////////////////////////////////
 // Function prototypes
 ////////////////////////////////////////////////////////////////////////////////
-static float32_t filter_rc_calculate_alpha(const float32_t fc, const float32_t fs);
-static float32_t filter_cr_calculate_alpha(const float32_t fc, const float32_t fs);
+static float32_t 	filter_rc_calculate_alpha	(const float32_t fc, const float32_t fs);
+static float32_t 	filter_cr_calculate_alpha	(const float32_t fc, const float32_t fs);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -129,17 +135,20 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
 			&& 	( NULL != (*p_filter_inst)->p_y ))
 		{
 			// Calculate coefficient
-			//(*p_filter_inst)->alpha = (float32_t) ( dt / ( dt + ( 1.0f / ( M_TWOPI * fc ))));
 			(*p_filter_inst)->alpha = filter_rc_calculate_alpha( fc, fs );
 
-			// Store order
+			// Store order & fc
 			(*p_filter_inst)->order = order;
+			(*p_filter_inst)->fc = fc;
 
 			// Initial value
 			for ( i = 0; i < order; i++)
 			{
 				(*p_filter_inst)->p_y[i] = init_value;
 			}
+
+			// Init success
+			(*p_filter_inst)->is_init = true;
 		}
 		else
 		{
@@ -156,6 +165,26 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
+*  		Get initialization status of filter
+*
+* @param[in] 	filter_inst	- Pointer to RC filter instance
+* @return 		is_init		- Initialization success flag
+*/
+////////////////////////////////////////////////////////////////////////////////
+bool filter_rc_is_init(p_filter_rc_t filter_inst)
+{
+	bool is_init = false;
+
+	if ( NULL != filter_inst )
+	{
+		is_init = filter_inst->is_init;
+	}
+
+	return is_init;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
 *   Update RC filter
 *
 * @param[in] 	filter_inst	- Pointer to RC filter instance
@@ -168,21 +197,25 @@ float32_t filter_rc_update(p_filter_rc_t filter_inst, const float32_t x)
 	float32_t y = 0.0f;
 	uint8_t n;
 
+	// Check for instance and success init
 	if ( NULL != filter_inst )
 	{
-		for ( n = 0; n < filter_inst->order; n++)
+		if ( true == filter_inst->is_init )
 		{
-			if ( 0 == n )
+			for ( n = 0; n < filter_inst->order; n++)
 			{
-				filter_inst->p_y[0] = ( filter_inst->p_y[0] + ( filter_inst->alpha * ( x - filter_inst->p_y[0] )));
+				if ( 0 == n )
+				{
+					filter_inst->p_y[0] = ( filter_inst->p_y[0] + ( filter_inst->alpha * ( x - filter_inst->p_y[0] )));
+				}
+				else
+				{
+					filter_inst->p_y[n] = ( filter_inst->p_y[n] + ( filter_inst->alpha * ( filter_inst->p_y[n-1] - filter_inst->p_y[n] )));
+				}
 			}
-			else
-			{
-				filter_inst->p_y[n] = ( filter_inst->p_y[n] + ( filter_inst->alpha * ( filter_inst->p_y[n-1] - filter_inst->p_y[n] )));
-			}
-		}
 
-		y = filter_inst->p_y[ filter_inst->order - 1U ];
+			y = filter_inst->p_y[ filter_inst->order - 1U ];
+		}
 	}
 
 	return y;
@@ -230,9 +263,11 @@ filter_status_t filter_rc_change_cutoff	(p_filter_rc_t filter_inst, const float3
 		// Calculate new alpha
 		alpha = filter_rc_calculate_alpha( fc, fs );
 
+		// Store data for newly set cutoff
 		if ( alpha > 0.0f )
 		{
 			filter_inst->alpha = alpha;
+			filter_inst->fc = fc;
 		}
 	}
 	else
@@ -241,6 +276,26 @@ filter_status_t filter_rc_change_cutoff	(p_filter_rc_t filter_inst, const float3
 	}
 
 	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   	Get filter cutoff frequency
+*
+* @param[in] 	filter_inst	- Filter instance
+* @return 		fc			- Filter cutoff frequency
+*/
+////////////////////////////////////////////////////////////////////////////////
+float32_t filter_rc_get_cutoff(p_filter_rc_t filter_inst)
+{
+	float32_t fc = 0.0f;
+
+	if ( NULL != filter_inst )
+	{
+		fc = filter_inst->fc;
+	}
+
+	return fc;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -278,8 +333,9 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
 			//(*p_filter_inst)->alpha = (float32_t) (( 1.0f / ( M_TWOPI * fc )) / ( dt + ( 1.0f / ( M_TWOPI * fc ))));
 			(*p_filter_inst)->alpha = filter_cr_calculate_alpha( fc, fs );
 
-			// Store order
+			// Store order & fc
 			(*p_filter_inst)->order = order;
+			(*p_filter_inst)->fc = fc;
 
 			// Initial value
 			for ( i = 0; i < order; i++)
@@ -287,6 +343,9 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
 				(*p_filter_inst)->p_y[i] = 0.0f;
 				(*p_filter_inst)->p_x[i] = 0.0f;
 			}
+
+			// Init success
+			(*p_filter_inst)->is_init = true;
 		}
 		else
 		{
@@ -303,6 +362,26 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
+*  		Get initialization status of filter
+*
+* @param[in] 	filter_inst	- Pointer to CR filter instance
+* @return 		is_init		- Initialization success flag
+*/
+////////////////////////////////////////////////////////////////////////////////
+bool filter_cr_is_init(p_filter_cr_t filter_inst)
+{
+	bool is_init = false;
+
+	if ( NULL != filter_inst )
+	{
+		is_init = filter_inst->is_init;
+	}
+
+	return is_init;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
 *   Update CR filter
 *
 * @param[in] 	filter_inst	- Pointer to CR filter instance
@@ -315,23 +394,27 @@ float32_t filter_cr_update(p_filter_cr_t filter_inst, const float32_t x)
 	float32_t y = 0.0f;
 	uint8_t n;
 
+	// Check for instance and success init
 	if ( NULL != filter_inst )
 	{
-		for ( n = 0; n < filter_inst->order; n++)
+		if ( true == filter_inst->is_init )
 		{
-			if ( 0 == n )
+			for ( n = 0; n < filter_inst->order; n++)
 			{
-				filter_inst->p_y[0] = (( filter_inst->alpha * filter_inst->p_y[0] ) + ( filter_inst->alpha * ( x - filter_inst->p_x[0] )));
-				filter_inst->p_x[0] = x;
+				if ( 0 == n )
+				{
+					filter_inst->p_y[0] = (( filter_inst->alpha * filter_inst->p_y[0] ) + ( filter_inst->alpha * ( x - filter_inst->p_x[0] )));
+					filter_inst->p_x[0] = x;
+				}
+				else
+				{
+					filter_inst->p_y[n] = (( filter_inst->alpha * filter_inst->p_y[n] ) + ( filter_inst->alpha * ( filter_inst->p_y[n-1] - filter_inst->p_x[n] )));
+					filter_inst->p_x[n] = filter_inst->p_y[n-1];
+				}
 			}
-			else
-			{
-				filter_inst->p_y[n] = (( filter_inst->alpha * filter_inst->p_y[n] ) + ( filter_inst->alpha * ( filter_inst->p_y[n-1] - filter_inst->p_x[n] )));
-				filter_inst->p_x[n] = filter_inst->p_y[n-1];
-			}
-		}
 
-		y = filter_inst->p_y[ filter_inst->order - 1U ];
+			y = filter_inst->p_y[ filter_inst->order - 1U ];
+		}
 	}
 
 	return y;
@@ -381,9 +464,11 @@ filter_status_t filter_cr_change_cutoff(p_filter_cr_t filter_inst, const float32
 		// Calculate new alpha
 		alpha = filter_cr_calculate_alpha( fc, fs );
 
+		// Store data for newly set cutoff
 		if ( alpha > 0.0f )
 		{
 			filter_inst->alpha = alpha;
+			filter_inst->fc = fc;
 		}
 	}
 	else
@@ -392,6 +477,26 @@ filter_status_t filter_cr_change_cutoff(p_filter_cr_t filter_inst, const float32
 	}
 
 	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   	Get filter cutoff frequency
+*
+* @param[in] 	filter_inst	- Filter instance
+* @return 		fc			- Filter cutoff frequency
+*/
+////////////////////////////////////////////////////////////////////////////////
+float32_t filter_cr_get_cutoff(p_filter_cr_t filter_inst)
+{
+	float32_t fc = 0.0f;
+
+	if ( NULL != filter_inst )
+	{
+		fc = filter_inst->fc;
+	}
+
+	return fc;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -433,6 +538,9 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 				// Get filter coefficient & order
 				memcpy( (*p_filter_inst)->p_a, p_a, order * sizeof( float32_t ));
 				(*p_filter_inst)->order = order;
+
+				// Init success
+				(*p_filter_inst)->is_init = true;
 			}
 			else
 			{
@@ -466,19 +574,65 @@ float32_t filter_fir_update(p_filter_fir_t filter_inst, const float32_t x)
 	float32_t y = 0.0f;
 	uint32_t i;
 
+	// Check for instance and success init
 	if ( NULL != filter_inst )
 	{
-		// Add new sample to buffer
-		ring_buffer_add_f( filter_inst->p_x, x );
-
-		// Make convolution
-		for ( i = 0; i < filter_inst -> order; i++ )
+		if ( true == filter_inst->is_init )
 		{
-			y += ( filter_inst->p_a[i] * ring_buffer_get_f( filter_inst->p_x, (( -i ) - 1 )));
+			// Add new sample to buffer
+			ring_buffer_add_f( filter_inst->p_x, x );
+
+			// Make convolution
+			for ( i = 0; i < filter_inst -> order; i++ )
+			{
+				y += ( filter_inst->p_a[i] * ring_buffer_get_f( filter_inst->p_x, (( -i ) - 1 )));
+			}
 		}
 	}
 
 	return y;
+}
+
+
+filter_status_t	filter_fir_get_coeff(p_filter_fir_t filter_inst, float32_t * const p_a)
+{
+	filter_status_t status = eFILTER_OK;
+
+	if 	(	( NULL != filter_inst )
+		&&	( NULL != p_a ))
+	{
+		if ( true == filter_inst->is_init )
+		{
+			// Copy coefficients
+			memcpy( p_a, filter_inst->p_a, ( filter_inst->order * sizeof(float32_t)));
+		}
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  		Get initialization status of filter
+*
+* @param[in] 	filter_inst	- Pointer to FIR filter instance
+* @return 		is_init		- Initialization success flag
+*/
+////////////////////////////////////////////////////////////////////////////////
+bool filter_fir_is_init(p_filter_fir_t filter_inst)
+{
+	bool is_init = false;
+
+	if ( NULL != filter_inst )
+	{
+		is_init = filter_inst->is_init;
+	}
+
+	return is_init;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -542,6 +696,9 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const float32_t 
 				memcpy( (*p_filter_inst)->p_zero, p_zero, zero_size * sizeof( float32_t ));
 				(*p_filter_inst)->pole_size = pole_size;
 				(*p_filter_inst)->zero_size = zero_size;
+
+				// Init success
+				(*p_filter_inst)->is_init = true;
 			}
 			else
 			{
