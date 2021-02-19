@@ -28,8 +28,10 @@
 /*
  * 	TODO: 	- add init guarde to IIR - DONE
  * 			- add get zeros&poles function to IIR - DONE
- * 			- test get gain IIR
- * 			- test normalize to unity gain IIR
+ * 			- test get gain IIR -DONE
+ * 			- test normalize to unity gain IIR - DONE
+ *
+ * 			- Add posibility to initialize filter with init value
  *
  */
 
@@ -889,7 +891,6 @@ filter_status_t filter_iir_calc_coeff_2nd_lpf(const float32_t fc, const float32_
 	return status;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *   Calculate IIR 2nd order high pass filter coefficients
@@ -1002,14 +1003,17 @@ filter_status_t filter_iir_calc_coeff_2nd_notch(const float32_t fc, const float3
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Calculate DC gain of LPF IIR filter based on it's poles & zeros - NEED TO BE TESTED!!!
+*   Calculate gain @DC frequency of LPF IIR filter based on it's poles & zeros
 *
 *@note: Equations taken from book:
 *
-*		"The Scientist and Engineer's Guide to Digital Signal Processing"
+*		"The Scientist and Engineer's Guide to Digital Signal Processing",
 *
 *
-*	G = a0 + a1 + ... + an / ( 1 - ( b1 + b2 + ... + bn+1 ))
+*		G = 1/a0 * (( b0 + b1 + ... + bn ) / ( 1 + (( a1 + a2 + ... + an+1 ) / a0 ))),
+*
+*		where: 	a - poles
+*				b - zeros
 *
 * @param[in] 	p_pole		- Pointer to IIR poles
 * @param[in] 	p_zero		- Pointer to IIR zeros
@@ -1033,17 +1037,21 @@ float32_t filter_iir_calc_lpf_gain(const float32_t * const p_pole, const float32
 		{
 			pole_sum += p_pole[i];
 		}
+
 		for( i = 0; i < zero_size; i++ )
 		{
 			zero_sum += p_zero[i];
 		}
 
-		// Calculate dc gain
-		pole_sum = ( 1.0f - pole_sum );
-
-		if ( pole_sum != 0.0f )
+		// Calculate gain at 0 frequency
+		if ( p_pole[0] != 0.0f )
 		{
-			dc_gain = ( zero_sum / pole_sum );
+			pole_sum = (( pole_sum / p_pole[0] ) + 1.0f );
+
+			if ( pole_sum != 0.0f )
+			{
+				dc_gain = (( zero_sum / pole_sum ) / p_pole[0] );
+			}
 		}
 	}
 
@@ -1052,7 +1060,7 @@ float32_t filter_iir_calc_lpf_gain(const float32_t * const p_pole, const float32
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Calculate gain at 0.5 normalize frequency (w=fc/fs) of HPF IIR
+*   Calculate gain @0.5 normalize frequency (w=fc/fs) of HPF IIR
 *   filter based on it's poles & zeros
 *
 * @note Normalize frequency of 0.5 is the highest cutoff frequency for HPF
@@ -1063,7 +1071,10 @@ float32_t filter_iir_calc_lpf_gain(const float32_t * const p_pole, const float32
 *		"The Scientist and Engineer's Guide to Digital Signal Processing"
 *
 *
-*	G = a0 - a1 + a2 - a3 + ... - an / ( 1 - ( -b1 + b2 - b3 +  ... - bn+1 ))
+*		G = 1/a0 * (( b0 - b1 + b2 - b3 +... + bn ) / ( 1 + (( a1 - a2 + a3 - a4 + ... + an+1 ) / a0 )))
+*
+*		where: 	a - poles
+*				b - zeros
 *
 * @param[in] 	p_pole		- Pointer to IIR poles
 * @param[in] 	p_zero		- Pointer to IIR zeros
@@ -1082,7 +1093,41 @@ float32_t filter_iir_calc_hpf_gain(const float32_t * const p_pole, const float32
 	if 	(	( NULL != p_pole )
 		&&	( NULL != p_zero ))
 	{
+		// Sum poles & zeros
+		for( i = 1; i < pole_size; i++ )
+		{
+			if ( i & 0x01U )
+			{
+				pole_sum -= p_pole[i];
+			}
+			else
+			{
+				pole_sum += p_pole[i];
+			}
+		}
 
+		for( i = 0; i < zero_size; i++ )
+		{
+			if ( i & 0x01U )
+			{
+				zero_sum -= p_zero[i];
+			}
+			else
+			{
+				zero_sum += p_zero[i];
+			}
+		}
+
+		// Calculate gain at Nyquist frequency
+		if ( p_pole[0] != 0.0f )
+		{
+			pole_sum = (( pole_sum / p_pole[0] ) + 1.0f );
+
+			if ( pole_sum != 0.0f )
+			{
+				dc_gain = (( zero_sum / pole_sum ) / p_pole[0] );
+			}
+		}
 	}
 
 	return dc_gain;
@@ -1090,7 +1135,7 @@ float32_t filter_iir_calc_hpf_gain(const float32_t * const p_pole, const float32
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Normalize zeros of IIR filter in order to get unity gain at DC frequency. - NEED TO BE TESTED!!!
+*   Normalize zeros of IIR filter in order to get unity gain at DC frequency
 *
 *@note: Implementation taken from book:
 *
@@ -1121,10 +1166,64 @@ filter_status_t	filter_iir_lpf_norm_zeros_to_unity_gain(const float32_t * const 
 		&&	( NULL != p_zero ))
 	{
 		// Calculate DC gain
-		dc_gain = filter_iir_calc_dc_gain( p_pole, p_zero, pole_size, zero_size );
+		dc_gain = filter_iir_calc_lpf_gain( p_pole, p_zero, pole_size, zero_size );
 
-		// Check if gain is really above 1
-		if ( dc_gain > 1.0f )
+		// Check gain
+		if ( dc_gain > 0.0f )
+		{
+			// Normalize zeros
+			for ( i = 0; i < zero_size; i++ )
+			{
+				p_zero[i] = ( p_zero[i] / dc_gain );
+			}
+		}
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   Normalize zeros of IIR filter in order to get unity gain at
+*   0.5 normalized frequency
+*
+*@note: Implementation taken from book:
+*
+*		"The Scientist and Engineer's Guide to Digital Signal Processing"
+*
+*	If requirement is to have a gain of 1 at DC frequency then simply
+*	call this function across already calculated coefficients. This newly
+*	calculated coefficients will result in unity gain filter.
+*
+*@note: This techniques simply calculated DC gain (G) and then divide all
+*		zeros of IIR filter with it. Thus only zeros are affected by
+*		this function math.
+*
+* @param[in] 	p_pole		- Pointer to IIR poles
+* @param[in] 	p_zero		- Pointer to IIR zeros
+* @param[in] 	pole_size	- Number of poles
+* @param[in] 	zero_size	- Number of zeros
+* @return 		status		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t	filter_iir_hpf_norm_zeros_to_unity_gain	(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
+{
+	filter_status_t status 		= eFILTER_OK;
+	float32_t		dc_gain		= 0.0f;
+	uint32_t		i;
+
+	if 	(	( NULL != p_pole )
+		&&	( NULL != p_zero ))
+	{
+		// Calculate DC gain
+		dc_gain = filter_iir_calc_hpf_gain( p_pole, p_zero, pole_size, zero_size );
+
+		// Check gain
+		if ( dc_gain > 0.0f )
 		{
 			// Normalize zeros
 			for ( i = 0; i < zero_size; i++ )
