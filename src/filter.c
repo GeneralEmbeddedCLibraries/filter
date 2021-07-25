@@ -1,10 +1,13 @@
+// Copyright (c) 2021 Ziga Miklosic
+// All Rights Reserved
+// This software is under MIT licence (https://opensource.org/licenses/MIT)
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *@file      filter.c
 *@brief     Various filter designs
 *@author    Ziga Miklosic
 *@date      02.01.2021
-*@version   V1.0.0
+*@version   V1.0.1
 *
 *@section   Description
 *   
