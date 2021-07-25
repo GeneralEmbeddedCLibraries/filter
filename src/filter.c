@@ -34,8 +34,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 #include "middleware/ring_buffer/src/ring_buffer.h"
+
+/**
+ * 	Compatibility check with RING_BUFFER
+ *
+ * 	Support version V1.0.x
+ */
+static_assert( 1 == RING_BUFFER_VER_MAJOR );
+static_assert( 0 == RING_BUFFER_VER_MINOR );
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
