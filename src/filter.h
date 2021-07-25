@@ -32,6 +32,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * 	Module version
+ */
+#define FILTER_VER_MAJOR		( 1 )
+#define FILTER_VER_MINOR		( 0 )
+#define FILTER_VER_DEVELOP		( 1 )
+
+/**
  * 	Filter status
  */
 typedef enum
