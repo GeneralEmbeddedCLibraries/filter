@@ -1,10 +1,13 @@
+// Copyright (c) 2021 Ziga Miklosic
+// All Rights Reserved
+// This software is under MIT licence (https://opensource.org/licenses/MIT)
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *@file      filter.c
 *@brief     Various filter designs
 *@author    Ziga Miklosic
 *@date      02.01.2021
-*@version   V1.0.0
+*@version   V1.0.1
 *
 *@section   Description
 *   
@@ -31,8 +34,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 #include "middleware/ring_buffer/src/ring_buffer.h"
+
+/**
+ * 	Compatibility check with RING_BUFFER
+ *
+ * 	Support version V1.0.x
+ */
+static_assert( 1 == RING_BUFFER_VER_MAJOR );
+static_assert( 0 == RING_BUFFER_VER_MINOR );
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
@@ -992,7 +1005,7 @@ filter_status_t filter_iir_calc_coeff_2nd_notch(const float32_t fc, const float3
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Calculate gain @DC frequency of LPF IIR filter based on it's poles & zeros
+*   Calculate gain at DC frequency of LPF IIR filter based on it's poles & zeros
 *
 *@note: Equations taken from book:
 *

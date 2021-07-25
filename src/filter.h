@@ -1,10 +1,13 @@
+// Copyright (c) 2021 Ziga Miklosic
+// All Rights Reserved
+// This software is under MIT licence (https://opensource.org/licenses/MIT)
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *@file      filter.h
 *@brief     Various filter designs
 *@author    Ziga Miklosic
 *@date      02.01.2021
-*@version   V1.0.0
+*@version   V1.0.1
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -27,6 +30,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * 	Module version
+ */
+#define FILTER_VER_MAJOR		( 1 )
+#define FILTER_VER_MINOR		( 0 )
+#define FILTER_VER_DEVELOP		( 1 )
 
 /**
  * 	Filter status
