@@ -1005,7 +1005,7 @@ filter_status_t filter_iir_calc_coeff_2nd_notch(const float32_t fc, const float3
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Calculate gain @DC frequency of LPF IIR filter based on it's poles & zeros
+*   Calculate gain at DC frequency of LPF IIR filter based on it's poles & zeros
 *
 *@note: Equations taken from book:
 *

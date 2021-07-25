@@ -1,3 +1,20 @@
+============================================================
+ Version 1.0.1 (25.07.2021)
+============================================================
+ 
+ Brief:
+ - Added copyright notice
+ - Added module version
+ - Added compatibility checks for needed modules
+ 
+ Features: 
+   
+ Todo:
+ - Fixed-point values support
+ - Asserts for development bug catcher
+   
+============================================================
+
 //============================================================
 // Version 1.0.0 (19.02.2021)
 //============================================================
