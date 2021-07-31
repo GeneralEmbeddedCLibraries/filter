@@ -7,7 +7,7 @@
 *@brief     Various filter designs
 *@author    Ziga Miklosic
 *@date      02.01.2021
-*@version   V1.0.1
+*@version   V1.0.2
 *
 *@section   Description
 *   
@@ -41,9 +41,9 @@
 /**
  * 	Compatibility check with RING_BUFFER
  *
- * 	Support version V1.0.x
+ * 	Support version V2.0.x
  */
-static_assert( 1 == RING_BUFFER_VER_MAJOR );
+static_assert( 2 == RING_BUFFER_VER_MAJOR );
 static_assert( 0 == RING_BUFFER_VER_MINOR );
 
 
@@ -524,6 +524,12 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 {
 	filter_status_t 		status 		= eFILTER_OK;
 	ring_buffer_status_t	buf_status	= eRING_BUFFER_OK;
+	ring_buffer_attr_t		buf_attr	= 	{
+												.name		= NULL,
+												.p_mem 		= NULL,	// dynamic allocation
+												.override	= true,
+												.item_size	= sizeof( float32_t )
+											};
 
 	if 	(	( NULL != p_filter_inst )
 		&& 	( order > 0UL )
@@ -539,7 +545,7 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 			(*p_filter_inst)->p_a = malloc( order * sizeof(float32_t));
 
 			// Create ring buffer
-			buf_status = ring_buffer_init( &(*p_filter_inst)->p_x, order );
+			buf_status = ring_buffer_init( &(*p_filter_inst)->p_x, order, &buf_attr );
 
 			// Ring buffer created
 			// and filter coefficient memory allocation succeed
@@ -593,8 +599,9 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_fir_update(p_filter_fir_t filter_inst, const float32_t x)
 {
-	float32_t y = 0.0f;
-	uint32_t i;
+	float32_t 	y 		= 0.0f;
+	uint32_t 	i 		= 0UL;
+	float32_t 	buf_val = 0.0f;
 
 	// Check for instance and success init
 	if ( NULL != filter_inst )
@@ -602,12 +609,16 @@ float32_t filter_fir_update(p_filter_fir_t filter_inst, const float32_t x)
 		if ( true == filter_inst->is_init )
 		{
 			// Add new sample to buffer
-			ring_buffer_add_f( filter_inst->p_x, x );
+			ring_buffer_add( filter_inst->p_x, (float32_t*) &x );
 
 			// Make convolution
 			for ( i = 0; i < filter_inst -> order; i++ )
 			{
-				y += ( filter_inst->p_a[i] * ring_buffer_get_f( filter_inst->p_x, (( -i ) - 1 )));
+				// Get buffer value
+				ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val,  (( -i ) - 1 ));
+
+				// Calculate convolution
+				y += ( filter_inst->p_a[i] * buf_val );
 			}
 		}
 	}
@@ -699,6 +710,12 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const float32_t 
 {
 	filter_status_t 		status 		= eFILTER_OK;
 	ring_buffer_status_t 	buf_status 	= eRING_BUFFER_OK;
+	ring_buffer_attr_t		buf_attr	= 	{
+												.name		= NULL,
+												.p_mem 		= NULL,	// dynamic allocation
+												.override	= true,
+												.item_size	= sizeof( float32_t )
+											};
 
 	if 	(	( NULL != p_filter_inst )
 		&& 	(( pole_size > 0UL ) && ( pole_size > 0UL ))
@@ -711,8 +728,8 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const float32_t 
 		if ( NULL != *p_filter_inst )
 		{
 			// Create ring buffers
-			buf_status = ring_buffer_init( &(*p_filter_inst)->p_x, zero_size );
-			buf_status |= ring_buffer_init( &(*p_filter_inst)->p_y, pole_size );
+			buf_status = ring_buffer_init( &(*p_filter_inst)->p_x, zero_size, &buf_attr );
+			buf_status |= ring_buffer_init( &(*p_filter_inst)->p_y, pole_size, &buf_attr );
 
 			// Allocate space for filter coefficients
 			(*p_filter_inst)->p_pole = malloc( pole_size * sizeof( float32_t ));
@@ -764,8 +781,9 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const float32_t 
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_iir_update(p_filter_iir_t filter_inst, const float32_t x)
 {
-	float32_t y = 0.0f;
-	uint32_t i;
+	float32_t 	y 		= 0.0f;
+	uint32_t 	i 		= 0UL;
+	float32_t	buf_val = 0.0f;
 
 	// Check for instance and success init
 	if ( NULL != filter_inst )
@@ -773,17 +791,23 @@ float32_t filter_iir_update(p_filter_iir_t filter_inst, const float32_t x)
 		if ( true == filter_inst->is_init )
 		{
 			// Add new input to buffer
-			ring_buffer_add_f( filter_inst->p_x, x );
+			ring_buffer_add( filter_inst->p_x, (float32_t*) &x );
 
 			// Calculate filter value
 			for ( i = 0; i < filter_inst->zero_size; i++ )
 			{
-				y += ( filter_inst->p_zero[i] * ring_buffer_get_f( filter_inst->p_x, (( -i ) - 1 )));
+				// Get sample
+				ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val, (( -i ) - 1 ));
+
+				y += ( filter_inst->p_zero[i] * buf_val );
 			}
 
 			for ( i = 1; i < filter_inst->pole_size; i++ )
 			{
-				y -= ( filter_inst->p_pole[i] * ring_buffer_get_f( filter_inst->p_y, -i ));
+				// Get sample
+				ring_buffer_get_by_index( filter_inst->p_y, (float32_t*) &buf_val, -i );
+
+				y -= ( filter_inst->p_pole[i] * buf_val );
 			}
 
 			// Check division by
@@ -797,7 +821,7 @@ float32_t filter_iir_update(p_filter_iir_t filter_inst, const float32_t x)
 			}
 
 			// Add new output to buffer
-			ring_buffer_add_f( filter_inst->p_y, y );
+			ring_buffer_add( filter_inst->p_y, (float32_t*) &y );
 		}
 	}
 
