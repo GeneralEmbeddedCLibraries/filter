@@ -101,6 +101,16 @@ typedef struct filter_iir_s
 	bool			  is_init;		/**<Filter instance initialization success flag */
 } filter_iir_t;
 
+/**
+ * 	Boolean Filter data
+ */
+typedef struct filter_bool_s
+{
+	p_filter_rc_t	lpf;		/**<Low pass filter */
+	float32_t		comp_lvl;	/**<Comparator trip level - symmetrical on 0.5 */
+	bool			y;			/**<Output value of comparator/filter */
+	bool			is_init;	/**<Filter instance initialization success flag */
+} filter_bool_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Variables
@@ -1338,6 +1348,208 @@ filter_status_t filter_iir_get_coeff(p_filter_iir_t filter_inst, float32_t * con
 
 	return status;
 }
+
+filter_status_t	filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)
+{
+	filter_status_t status = eFILTER_OK;
+
+	if ( NULL != p_filter_inst )
+	{
+		// Allocate space
+		*p_filter_inst = malloc( sizeof( filter_bool_t ));
+
+		// Check if allocation succeed & valid configs
+		if 	(	( NULL != p_filter_inst )
+			&&	(( comp_lvl > 0.0f ) && ( comp_lvl < 0.4f )))
+		{
+			// Init LPF
+			status = filter_rc_init( &(*p_filter_inst)->lpf, fc, fs, 1, 0.0f );
+
+			if ( eFILTER_OK == status )
+			{
+				(*p_filter_inst)->comp_lvl 	= comp_lvl;
+				(*p_filter_inst)->y = false;
+
+				// Init succeed
+				(*p_filter_inst)->is_init = true;
+			}
+		}
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
+/*filter_status_t status = eFILTER_OK;
+uint8_t i;
+
+if (( NULL != p_filter_inst ) && ( order > 0UL ))
+{
+	// Allocate space
+	*p_filter_inst 			= malloc( sizeof( filter_cr_t ));
+	(*p_filter_inst)->p_y 	= malloc( order  * sizeof( float32_t ));
+	(*p_filter_inst)->p_x 	= malloc( order  * sizeof( float32_t ));
+
+	// Check if allocation succeed
+	if 	(	( NULL != *p_filter_inst )
+		&& 	( NULL != (*p_filter_inst)->p_y )
+		&&	( NULL != (*p_filter_inst)->p_x ))
+	{
+		// Calculate coefficient
+		status = filter_cr_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha );
+
+		if ( eFILTER_OK == status )
+		{
+			// Store order & fc
+			(*p_filter_inst)->order = order;
+			(*p_filter_inst)->fc = fc;
+
+			// Initial value
+			for ( i = 0; i < order; i++)
+			{
+				(*p_filter_inst)->p_y[i] = 0.0f;
+				(*p_filter_inst)->p_x[i] = 0.0f;
+			}
+
+			// Init success
+			(*p_filter_inst)->is_init = true;
+		}
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+}
+else
+{
+	status = eFILTER_ERROR;
+}*/
+
+filter_status_t	filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_is_init)
+{
+	filter_status_t status = eFILTER_OK;
+
+	if 	(	( NULL != filter_inst )
+		&& 	( NULL != p_is_init ))
+	{
+		*p_is_init = filter_inst->is_init;
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
+/*// Get input
+g_end_sw[sw_num].state = button_get_state_end_sw( sw_num );
+
+// Filter input
+filt_in = (float32_t) g_end_sw[sw_num].state;
+filt_val = filter_rc_update( g_end_sw[sw_num].lpf, filt_in );
+
+// Comparator
+if 	(	( eBUTTON_OFF == g_end_sw[sw_num].state_filt )
+	&& 	( filt_val >= 0.8f ))
+{
+	g_end_sw[sw_num].state_filt = eBUTTON_ON;
+}
+
+else if (	( eBUTTON_ON == g_end_sw[sw_num].state_filt )
+		&& 	( filt_val <= 0.2f ))
+{
+	g_end_sw[sw_num].state_filt = eBUTTON_OFF;
+}
+
+else
+{
+	// No actions...
+}*/
+
+filter_status_t	filter_bool_update(p_filter_bool_t filter_inst, const bool in, bool * const p_out)
+{
+	filter_status_t status 		= eFILTER_OK;
+	float32_t		filt_in 	= 0.0f;
+	float32_t		filt_out	= 0.0f;
+
+	if ( NULL != filter_inst )
+	{
+		// Convert input to floating
+		filt_in = (float32_t) in;
+
+		// Apply filter
+		filt_out = filter_rc_update( filter_inst->lpf, filt_in );
+
+		// Apply comparator
+		if 	(	( false == filter_inst->y )
+			&& 	( filt_out >= ( 1.0f - filter_inst->comp_lvl )))
+		{
+			filter_inst->y  = true;
+		}
+
+		else if (	( true == filter_inst->y )
+				&& 	( filt_out <= filter_inst->comp_lvl ))
+		{
+			filter_inst->y  = false;
+		}
+
+		else
+		{
+			// No actions...
+		}
+
+		// Return output
+		if ( NULL != p_out )
+		{
+			*p_out = filter_inst->y ;
+		}
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
+
+filter_status_t filter_bool_get_fc(p_filter_bool_t filter_inst, float32_t * const p_fc)
+{
+	filter_status_t status = eFILTER_OK;
+
+	if ( NULL != filter_inst )
+	{
+
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
+
+filter_status_t filter_bool_change_cutoff(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs)
+{
+	filter_status_t status = eFILTER_OK;
+
+	if ( NULL != filter_inst )
+	{
+
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
