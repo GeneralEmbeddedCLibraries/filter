@@ -1349,6 +1349,31 @@ filter_status_t filter_iir_get_coeff(p_filter_iir_t filter_inst, float32_t * con
 	return status;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  	Initialize boolean filter
+*
+* @brief	Boolean filter is basically LPF (RC filter) + comparator
+* 			at the end of signal path.
+*
+* 			Input to filter in bool and output of filer is bool. Signal
+* 			in between is being converted to float either 0.0f or 1.0f. That
+* 			signal then goes to LPF. Output of LPF goes to schmitt trigger
+* 			comparator with configurable trip levels at init phase
+*
+* 			Input "comp_lvl" setup comparator trip level symmetrical to 0.5
+* 			value. E.g.: comp_lvl = 0.1 will result in levels:
+*
+* 				OFF -> ON:	level = 0.9
+* 				ON 	-> OFF:	level = 0.1
+*
+* @param[in] 	filter_inst	- Pointer to bool filter instance
+* @param[in] 	fc			- Cuttoff frequency of LPF
+* @param[in] 	fs			- Sample time of filter
+* @param[in] 	comp_lvl	- Comparator trip level
+* @return 		status 		- Status of initialization
+*/
+////////////////////////////////////////////////////////////////////////////////
 filter_status_t	filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)
 {
 	filter_status_t status = eFILTER_OK;
@@ -1383,51 +1408,15 @@ filter_status_t	filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_
 	return status;
 }
 
-/*filter_status_t status = eFILTER_OK;
-uint8_t i;
-
-if (( NULL != p_filter_inst ) && ( order > 0UL ))
-{
-	// Allocate space
-	*p_filter_inst 			= malloc( sizeof( filter_cr_t ));
-	(*p_filter_inst)->p_y 	= malloc( order  * sizeof( float32_t ));
-	(*p_filter_inst)->p_x 	= malloc( order  * sizeof( float32_t ));
-
-	// Check if allocation succeed
-	if 	(	( NULL != *p_filter_inst )
-		&& 	( NULL != (*p_filter_inst)->p_y )
-		&&	( NULL != (*p_filter_inst)->p_x ))
-	{
-		// Calculate coefficient
-		status = filter_cr_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha );
-
-		if ( eFILTER_OK == status )
-		{
-			// Store order & fc
-			(*p_filter_inst)->order = order;
-			(*p_filter_inst)->fc = fc;
-
-			// Initial value
-			for ( i = 0; i < order; i++)
-			{
-				(*p_filter_inst)->p_y[i] = 0.0f;
-				(*p_filter_inst)->p_x[i] = 0.0f;
-			}
-
-			// Init success
-			(*p_filter_inst)->is_init = true;
-		}
-	}
-	else
-	{
-		status = eFILTER_ERROR;
-	}
-}
-else
-{
-	status = eFILTER_ERROR;
-}*/
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  	Update boolean filter
+*
+* @param[in] 	filter_inst	- Filter instance
+* @param[in] 	p_is_init	- Pointer to is init flag
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 filter_status_t	filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_is_init)
 {
 	filter_status_t status = eFILTER_OK;
@@ -1445,31 +1434,16 @@ filter_status_t	filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_
 	return status;
 }
 
-/*// Get input
-g_end_sw[sw_num].state = button_get_state_end_sw( sw_num );
-
-// Filter input
-filt_in = (float32_t) g_end_sw[sw_num].state;
-filt_val = filter_rc_update( g_end_sw[sw_num].lpf, filt_in );
-
-// Comparator
-if 	(	( eBUTTON_OFF == g_end_sw[sw_num].state_filt )
-	&& 	( filt_val >= 0.8f ))
-{
-	g_end_sw[sw_num].state_filt = eBUTTON_ON;
-}
-
-else if (	( eBUTTON_ON == g_end_sw[sw_num].state_filt )
-		&& 	( filt_val <= 0.2f ))
-{
-	g_end_sw[sw_num].state_filt = eBUTTON_OFF;
-}
-
-else
-{
-	// No actions...
-}*/
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  	Update boolean filter
+*
+* @param[in] 	filter_inst	- Filter instance
+* @param[in] 	in			- Input value
+* @param[out] 	p_out		- Output value
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 filter_status_t	filter_bool_update(p_filter_bool_t filter_inst, const bool in, bool * const p_out)
 {
 	filter_status_t status 		= eFILTER_OK;
