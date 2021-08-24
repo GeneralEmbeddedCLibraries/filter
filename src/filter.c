@@ -1490,14 +1490,23 @@ filter_status_t	filter_bool_update(p_filter_bool_t filter_inst, const bool in, b
 	return status;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  	Get boolean cutoff frequency
+*
+* @param[in] 	filter_inst	- Filter instance
+* @param[out] 	p_fc		- Pointer to cuttoff freq
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_bool_get_fc(p_filter_bool_t filter_inst, float32_t * const p_fc)
 {
 	filter_status_t status = eFILTER_OK;
 
-	if ( NULL != filter_inst )
+	if 	(	( NULL != filter_inst )
+		&& 	( NULL != p_fc ))
 	{
-
+		*p_fc = filter_inst->lpf->fc;
 	}
 	else
 	{
@@ -1507,14 +1516,23 @@ filter_status_t filter_bool_get_fc(p_filter_bool_t filter_inst, float32_t * cons
 	return status;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  	Change boolean filter cuttoff freq
+*
+* @param[in] 	filter_inst	- Filter instance
+* @param[in] 	fc			- Cuttoff frequency of LPF
+* @param[in] 	fs			- Sample time of filter
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_bool_change_cutoff(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs)
 {
-	filter_status_t status = eFILTER_OK;
+	filter_status_t status 	= eFILTER_OK;
 
 	if ( NULL != filter_inst )
 	{
-
+		status = filter_rc_change_cutoff( filter_inst->lpf, fc, fs) ;
 	}
 	else
 	{
@@ -1523,7 +1541,6 @@ filter_status_t filter_bool_change_cutoff(p_filter_bool_t filter_inst, const flo
 
 	return status;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
