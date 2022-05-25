@@ -11,7 +11,7 @@ I found usefull "***The Scientist and Engineer's Guide to Digital Signal Process
 #### Dependencies
 Filter module needs ring buffer in order to store data. Ring buffer sources can be found under this [link](https://github.com/Misc-library-for-DSP/ring_buffer). 
 
-Definition of flaot32_t must be provided by user. In current implementation it is defined in "*project_config.h*". Just add following statement to your code where it suits the best.
+Definition of float32_t must be provided by user. In current implementation it is defined in "*project_config.h*". Just add following statement to your code where it suits the best.
 
 ```C
 // Define float
