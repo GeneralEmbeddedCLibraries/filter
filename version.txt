@@ -1,4 +1,17 @@
 ============================================================
+ Version 1.0.3 (xx.xx.2022)
+============================================================
+ 
+ Features/Changes:
+ - Added boolean filter 
+ - Added check for invalid RC/CR filter settings
+   
+ Todo:
+ - Fixed-point values support
+ - Asserts for development bug catcher
+
+
+============================================================
  Version 1.0.2 (31.07.2021)
 ============================================================
  
