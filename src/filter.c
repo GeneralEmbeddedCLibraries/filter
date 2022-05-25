@@ -7,7 +7,7 @@
 *@brief     Various filter designs
 *@author    Ziga Miklosic
 *@date      02.01.2021
-*@version   V1.0.2
+*@version   V1.0.3
 *
 *@section   Description
 *   

@@ -7,7 +7,7 @@
 *@brief     Various filter designs
 *@author    Ziga Miklosic
 *@date      02.01.2021
-*@version   V1.0.2
+*@version   V1.0.3
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -36,7 +36,7 @@
  */
 #define FILTER_VER_MAJOR		( 1 )
 #define FILTER_VER_MINOR		( 0 )
-#define FILTER_VER_DEVELOP		( 2 )
+#define FILTER_VER_DEVELOP		( 3 )
 
 /**
  * 	Filter status
