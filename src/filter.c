@@ -43,8 +43,8 @@
  *
  * 	Support version V2.0.x
  */
-static_assert( 2 == RING_BUFFER_VER_MAJOR );
-static_assert( 0 == RING_BUFFER_VER_MINOR );
+//static_assert( 2 == RING_BUFFER_VER_MAJOR );
+//static_assert( 0 == RING_BUFFER_VER_MINOR );
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -264,7 +264,8 @@ static filter_status_t filter_rc_calculate_alpha(const float32_t fc, const float
 	if 	(	( fc < ( fs / 2.0f ))
 		&& 	( p_alpha != NULL ))
 	{
-		*p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( M_TWOPI * fc ))));
+		//*p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( M_TWOPI * fc ))));
+		*p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( MY_TWOPI * fc ))));
 	}
 	else
 	{
@@ -473,7 +474,8 @@ static filter_status_t filter_cr_calculate_alpha(const float32_t fc, const float
 		&& ( fc > 0.0f )
 		&& ( p_alpha != NULL ))
 	{
-		*p_alpha = (float32_t) (( 1.0f / ( M_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( M_TWOPI * fc ))));
+		//*p_alpha = (float32_t) (( 1.0f / ( M_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( M_TWOPI * fc ))));
+		*p_alpha = (float32_t) (( 1.0f / ( MY_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( MY_TWOPI * fc ))));
 	}
 
 	return status;
