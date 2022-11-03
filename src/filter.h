@@ -6,8 +6,8 @@
 *@file      filter.h
 *@brief     Various filter designs
 *@author    Ziga Miklosic
-*@date      02.01.2021
-*@version   V1.0.3
+*@date      03.11.2022
+*@version   V1.1.0
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -23,7 +23,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Includes
 ////////////////////////////////////////////////////////////////////////////////
-#include "project_config.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -35,8 +34,8 @@
  * 	Module version
  */
 #define FILTER_VER_MAJOR		( 1 )
-#define FILTER_VER_MINOR		( 0 )
-#define FILTER_VER_DEVELOP		( 3 )
+#define FILTER_VER_MINOR		( 1 )
+#define FILTER_VER_DEVELOP		( 0 )
 
 /**
  * 	Filter status
@@ -71,6 +70,11 @@ typedef struct filter_iir_s * p_filter_iir_t;
  * 	Boolean filter instance type
  */
 typedef struct filter_bool_s * p_filter_bool_t;
+
+/**
+ *  32-bit floating data type definition
+ */
+typedef float float32_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -112,7 +116,6 @@ filter_status_t filter_bool_get_fc			(p_filter_bool_t filter_inst, float32_t * c
 filter_status_t filter_bool_change_cutoff	(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs);
 
 #endif // __FILTER_H
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
