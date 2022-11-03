@@ -6,7 +6,7 @@
 *@file      filter.h
 *@brief     Various filter designs
 *@author    Ziga Miklosic
-*@date      02.01.2021
+*@date      03.11.2021
 *@version   V1.0.3
 */
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Includes
 ////////////////////////////////////////////////////////////////////////////////
-#include "project_config.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -71,6 +70,11 @@ typedef struct filter_iir_s * p_filter_iir_t;
  * 	Boolean filter instance type
  */
 typedef struct filter_bool_s * p_filter_bool_t;
+
+/**
+ *  32-bit floating data type definition
+ */
+typedef float float32_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions

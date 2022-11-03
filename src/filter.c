@@ -6,7 +6,7 @@
 *@file      filter.c
 *@brief     Various filter designs
 *@author    Ziga Miklosic
-*@date      02.01.2021
+*@date      03.11.2021
 *@version   V1.0.3
 *
 *@section   Description
@@ -30,12 +30,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Includes
 ////////////////////////////////////////////////////////////////////////////////
-#include "filter.h"
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
 
+#include "filter.h"
 #include "middleware/ring_buffer/src/ring_buffer.h"
 
 /**
@@ -43,13 +43,19 @@
  *
  * 	Support version V2.0.x
  */
-static_assert( 2 == RING_BUFFER_VER_MAJOR );
-static_assert( 0 == RING_BUFFER_VER_MINOR );
+_Static_assert( 2 == RING_BUFFER_VER_MAJOR );
+_Static_assert( 0 == RING_BUFFER_VER_MINOR );
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
+
+/**
+ *  Definition of PI
+ */
+#define FILTER_PI       ((float32_t)( 3.14159265f ))
+#define FILTER_TWOPI    ((float32_t)( 2.0 * FILTER_PI ))
 
 /**
  * 	RC Filter data
@@ -264,7 +270,7 @@ static filter_status_t filter_rc_calculate_alpha(const float32_t fc, const float
 	if 	(	( fc < ( fs / 2.0f ))
 		&& 	( p_alpha != NULL ))
 	{
-		*p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( M_TWOPI * fc ))));
+		*p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( FILTER_TWOPI * fc ))));
 	}
 	else
 	{
@@ -473,7 +479,7 @@ static filter_status_t filter_cr_calculate_alpha(const float32_t fc, const float
 		&& ( fc > 0.0f )
 		&& ( p_alpha != NULL ))
 	{
-		*p_alpha = (float32_t) (( 1.0f / ( M_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( M_TWOPI * fc ))));
+		*p_alpha = (float32_t) (( 1.0f / ( FILTER_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( FILTER_TWOPI * fc ))));
 	}
 
 	return status;
