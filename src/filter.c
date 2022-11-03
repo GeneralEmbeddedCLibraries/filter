@@ -43,8 +43,8 @@
  *
  * 	Support version V2.0.x
  */
-//static_assert( 2 == RING_BUFFER_VER_MAJOR );
-//static_assert( 0 == RING_BUFFER_VER_MINOR );
+_Static_assert( 2 == RING_BUFFER_VER_MAJOR );
+_Static_assert( 0 == RING_BUFFER_VER_MINOR );
 
 
 ////////////////////////////////////////////////////////////////////////////////
