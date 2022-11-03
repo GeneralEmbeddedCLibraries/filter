@@ -6,8 +6,8 @@
 *@file      filter.c
 *@brief     Various filter designs
 *@author    Ziga Miklosic
-*@date      03.11.2021
-*@version   V1.0.3
+*@date      03.11.2022
+*@version   V1.1.0
 *
 *@section   Description
 *   
