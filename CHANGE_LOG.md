@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project/module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
-## V1.0.4 - 03.11.2022
+## V1.1.0 - 03.11.2022
 
 ### Fixed
  - Added checks for invalid filter initialization
@@ -49,7 +49,7 @@ and this project/module adheres to [Semantic Versioning](https://semver.org/spec
  - Asserts for development bug catcher
 ---
 
-## V1.0.0 - 19.022022
+## V1.0.0 - 19.02.2022
 
 ### Added
  - Initial implementation of filters
