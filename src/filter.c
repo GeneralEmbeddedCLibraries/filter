@@ -247,8 +247,8 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
     if (( NULL != p_filter_inst ) && ( order > 0UL ))
     {
         // Allocate space
-        *p_filter_inst             = malloc( sizeof( filter_rc_t ));
-        (*p_filter_inst)->p_y     = malloc( order  * sizeof( float32_t ));
+        *p_filter_inst          = malloc( sizeof( filter_rc_t ));
+        (*p_filter_inst)->p_y   = malloc( order  * sizeof( float32_t ));
 
         // Check if allocation succeed
         if  (   ( NULL != *p_filter_inst )
@@ -320,9 +320,9 @@ filter_status_t filter_rc_is_init(p_filter_rc_t filter_inst, bool * const p_is_i
 * @note This function must be called in equidistant time period defined by 1/fs!
 *
 * @param[in]    filter_inst - RC filter instance
-* @param[in]     in            - Input value
-* @param[out]     p_out        - Output (filtered) value
-* @return         status      - Status of operation
+* @param[in]    in          - Input value
+* @param[out]   p_out       - Output (filtered) value
+* @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_rc_hndl(p_filter_rc_t filter_inst, const float32_t in, float32_t * const p_out)
@@ -401,8 +401,8 @@ filter_status_t filter_rc_reset(p_filter_rc_t filter_inst, const float32_t rst_v
 *       Set cutoff frequency of RC filter on-the-fly
 *
 * @param[in]    filter_inst - RC filter instance
-* @param[in]     fc            - Cutoff frequency
-* @return         status        - Status of operation
+* @param[in]    fc          - Cutoff frequency
+* @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_rc_fc_set(p_filter_rc_t filter_inst, const float32_t fc)
@@ -515,10 +515,10 @@ filter_status_t filter_rc_fs_get(p_filter_rc_t filter_inst, float32_t * const p_
 *
 * @note Fs and order cannot be change later!
 *
-* @param[in]     p_filter_inst  - Pointer to CR filter instance
-* @param[in]     fc             - Filter cutoff frequency
-* @param[in]     fs             - Sample frequency
-* @param[in]     order          - Order of filter (number of cascaded filter)
+* @param[in]    p_filter_inst   - Pointer to CR filter instance
+* @param[in]    fc              - Filter cutoff frequency
+* @param[in]    fs              - Sample frequency
+* @param[in]    order           - Order of filter (number of cascaded filter)
 * @return       status          - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
@@ -529,9 +529,9 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
     if (( NULL != p_filter_inst ) && ( order > 0UL ))
     {
         // Allocate space
-        *p_filter_inst             = malloc( sizeof( filter_cr_t ));
-        (*p_filter_inst)->p_y     = malloc( order  * sizeof( float32_t ));
-        (*p_filter_inst)->p_x     = malloc( order  * sizeof( float32_t ));
+        *p_filter_inst          = malloc( sizeof( filter_cr_t ));
+        (*p_filter_inst)->p_y   = malloc( order  * sizeof( float32_t ));
+        (*p_filter_inst)->p_x   = malloc( order  * sizeof( float32_t ));
 
         // Check if allocation succeed
         if  (   ( NULL != *p_filter_inst )
@@ -1083,8 +1083,8 @@ filter_status_t filter_bool_fs_get(p_filter_bool_t filter_inst, float32_t * cons
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order, const float32_t init_value)
 {
-    filter_status_t         status        = eFILTER_OK;
-    ring_buffer_status_t    buf_status    = eRING_BUFFER_OK;
+    filter_status_t         status      = eFILTER_OK;
+    ring_buffer_status_t    buf_status  = eRING_BUFFER_OK;
 
     // Setup sample buffer
     const ring_buffer_attr_t buf_attr =
@@ -1095,9 +1095,9 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
         .item_size  = sizeof( float32_t )
     };
 
-    if     (    ( NULL != p_filter_inst )
-        &&     ( order > 0UL )
-        &&    ( NULL != p_a ))
+    if  (   ( NULL != p_filter_inst )
+        &&  ( order > 0UL )
+        &&  ( NULL != p_a ))
     {
         // Allocate filter space
         *p_filter_inst = malloc( sizeof( filter_fir_t ));
@@ -1113,8 +1113,8 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 
             // Ring buffer created
             // and filter coefficient memory allocation succeed
-            if     (    ( eRING_BUFFER_OK == buf_status )
-                &&     ( NULL != (*p_filter_inst)->p_a ))
+            if  (   ( eRING_BUFFER_OK == buf_status )
+                &&  ( NULL != (*p_filter_inst)->p_a ))
             {
                 // Get filter coefficient & order
                 memcpy( (*p_filter_inst)->p_a, p_a, order * sizeof( float32_t ));
@@ -1395,9 +1395,9 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
 
             // Check if ring buffer created
             // and filter coefficient memory allocation succeed
-            if     (    ( eRING_BUFFER_OK == buf_status )
-                &&    ( NULL != (*p_filter_inst)->coeff.p_pole  )
-                &&    ( NULL != (*p_filter_inst)->coeff.p_zero  ))
+            if  (   ( eRING_BUFFER_OK == buf_status )
+                &&  ( NULL != (*p_filter_inst)->coeff.p_pole  )
+                &&  ( NULL != (*p_filter_inst)->coeff.p_zero  ))
             {
                 // Get filter coefficient & order
                 memcpy( (*p_filter_inst)->coeff.p_pole, p_coeff->p_pole, p_coeff->num_of_pole * sizeof( float32_t ));
@@ -1474,7 +1474,7 @@ filter_status_t filter_iir_is_init(p_filter_iir_t filter_inst, bool * const p_is
 filter_status_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in, float32_t * const p_out)
 {
     filter_status_t status  = eFILTER_OK;
-    float32_t        buf_val = 0.0f;
+    float32_t       buf_val = 0.0f;
 
     // Check for instance and success init
     if ( NULL != filter_inst )
@@ -1802,7 +1802,7 @@ filter_status_t filter_iir_coeff_calc_2nd_bpf(const float32_t fc, const float32_
 /**
 *   Calculate gain at DC frequency of LPF IIR filter based on it's poles & zeros
 *
-*@note: Equations taken from book:
+* @note     Equations taken from book:
 *
 *        "The Scientist and Engineer's Guide to Digital Signal Processing",
 *
@@ -1927,17 +1927,17 @@ float32_t filter_iir_calc_hpf_gain(const filter_iir_coeff_t * const p_coeff)
 /**
 *   Normalize zeros of IIR filter in order to get unity gain at DC frequency
 *
-*@note: Implementation taken from book:
+* @note     Implementation taken from book:
 *
-*        "The Scientist and Engineer's Guide to Digital Signal Processing"
+*           "The Scientist and Engineer's Guide to Digital Signal Processing"
 *
-*    If requirement is to have a gain of 1 at DC frequency then simply
-*    call this function across already calculated coefficients. This newly
-*    calculated coefficients will result in unity gain filter.
+*       If requirement is to have a gain of 1 at DC frequency then simply
+*       call this function across already calculated coefficients. This newly
+*       calculated coefficients will result in unity gain filter.
 *
-*@note: This techniques simply calculated DC gain (G) and then divide all
-*        zeros of IIR filter with it. Thus only zeros are affected by
-*        this function math.
+* @note     This techniques simply calculated DC gain (G) and then divide all
+*           zeros of IIR filter with it. Thus only zeros are affected by
+*           this function math.
 *
 * @param[in]    p_coeff - IIR filter coefficients
 * @return       status  - Status of operation
@@ -1975,7 +1975,7 @@ filter_status_t filter_iir_coeff_to_unity_gain_lpf(filter_iir_coeff_t * const p_
 *   Normalize zeros of IIR filter in order to get unity gain at
 *   0.5 normalized frequency
 *
-*@note: Implementation taken from book:
+* @note Implementation taken from book:
 *
 *        "The Scientist and Engineer's Guide to Digital Signal Processing"
 *
@@ -1983,9 +1983,9 @@ filter_status_t filter_iir_coeff_to_unity_gain_lpf(filter_iir_coeff_t * const p_
 *    call this function across already calculated coefficients. This newly
 *    calculated coefficients will result in unity gain filter.
 *
-*@note: This techniques simply calculated DC gain (G) and then divide all
-*        zeros of IIR filter with it. Thus only zeros are affected by
-*        this function math.
+* @note     This techniques simply calculated DC gain (G) and then divide all
+*           zeros of IIR filter with it. Thus only zeros are affected by
+*           this function math.
 *
 * @param[in]    p_coeff - IIR filter coefficients
 * @return       status  - Status of operation

@@ -16,6 +16,7 @@ and this project/module adheres to [Semantic Versioning](https://semver.org/spec
 
 ### Changed
  - Unifying return statuses of API functions
+ - Convert tabs to spaces
 
 ---
 ## V1.1.0 - 03.11.2022
