@@ -35,11 +35,11 @@ root/middleware/filter/"module_space"
 
 | API Functions | Description | Prototype |
 | --- | ----------- | ----- |
-| **filter_rc_init** | Initialization of RC filter | filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value) |
-| **filter_rc_update** | Update (handle) RC filter  | float32_t filter_rc_update(p_filter_rc_t filter_inst, const float32_t x) |
-| **filter_rc_change_cutoff** | Change RC filter cutoff frequency  | filter_status_t filter_rc_change_cutoff(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs) |
-| **filter_rc_get_cutoff** | Get RC filter cutoff frequency  | float32_t filter_rc_get_cutoff(p_filter_rc_t filter_inst) |
-| **filter_rc_is_init** | Get RC filter initialization state  | bool filter_rc_is_init(p_filter_rc_t filter_inst) |
+| **filter_rc_init**            | Initialization of RC filter | filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value) |
+| **filter_rc_update**          | Update (handle) RC filter  | float32_t filter_rc_update(p_filter_rc_t filter_inst, const float32_t x) |
+| **filter_rc_change_cutoff**   | Change RC filter cutoff frequency  | filter_status_t filter_rc_change_cutoff(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs) |
+| **filter_rc_get_cutoff**      | Get RC filter cutoff frequency  | float32_t filter_rc_get_cutoff(p_filter_rc_t filter_inst) |
+| **filter_rc_is_init**         | Get RC filter initialization state  | bool filter_rc_is_init(p_filter_rc_t filter_inst) |
 
 ## **CR (High-Pass) Filter API**
 
