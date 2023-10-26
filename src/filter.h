@@ -80,11 +80,16 @@ typedef float float32_t;
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_rc_init			(p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value);
-float32_t 		filter_rc_update		(p_filter_rc_t filter_inst, const float32_t x);
-filter_status_t filter_rc_change_cutoff	(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs);
-float32_t		filter_rc_get_cutoff	(p_filter_rc_t filter_inst);
-bool			filter_rc_is_init		(p_filter_rc_t filter_inst);
-filter_status_t filter_rc_reset         (p_filter_rc_t filter_inst);
+filter_status_t filter_rc_is_init       (p_filter_rc_t const filter_inst, bool * const p_is_init);
+filter_status_t filter_rc_hndl		    (p_filter_rc_t filter_inst, const float32_t in, float32_t * const p_out);
+filter_status_t filter_rc_reset         (p_filter_rc_t filter_inst, const float32_t rst_value);
+filter_status_t filter_rc_fc_set    	(p_filter_rc_t filter_inst, const float32_t fc);
+filter_status_t filter_rc_fc_get	    (p_filter_rc_t filter_inst, float32_t * const p_fc);
+filter_status_t filter_rc_fs_get	    (p_filter_rc_t filter_inst, float32_t * const p_fs);
+
+
+
+
 
 filter_status_t filter_cr_init			(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order);
 float32_t 		filter_cr_update		(p_filter_cr_t filter_inst, const float32_t x);
@@ -110,6 +115,9 @@ filter_status_t	filter_iir_lpf_norm_zeros_to_unity_gain	(const float32_t * const
 filter_status_t	filter_iir_hpf_norm_zeros_to_unity_gain	(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size);
 bool			filter_iir_is_init						(p_filter_iir_t filter_inst);
 filter_status_t filter_iir_get_coeff					(p_filter_iir_t filter_inst, float32_t * const p_pole, float32_t * const p_zero);
+
+
+
 
 filter_status_t	filter_bool_init			(p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl);
 filter_status_t	filter_bool_is_init			(p_filter_bool_t filter_inst, bool * const p_is_init);
