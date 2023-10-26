@@ -561,6 +561,11 @@ float32_t filter_cr_get_cutoff(p_filter_cr_t filter_inst)
 	return fc;
 }
 
+filter_status_t filter_cr_reset(p_filter_cr_t filter_inst)
+{
+    
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *   Initialize FIR filter
