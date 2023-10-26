@@ -127,8 +127,10 @@ typedef struct filter_bool_s
 ////////////////////////////////////////////////////////////////////////////////
 // Function prototypes
 ////////////////////////////////////////////////////////////////////////////////
-static filter_status_t filter_rc_calculate_alpha	(const float32_t fc, const float32_t fs, float32_t * const p_alpha);
-static filter_status_t filter_cr_calculate_alpha	(const float32_t fc, const float32_t fs, float32_t * const p_alpha);
+static filter_status_t  filter_rc_calculate_alpha	(const float32_t fc, const float32_t fs, float32_t * const p_alpha);
+static filter_status_t  filter_cr_calculate_alpha	(const float32_t fc, const float32_t fs, float32_t * const p_alpha);
+static void             filter_buf_fill             (const p_ring_buffer_t buf_inst, const float32_t val);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -188,6 +190,28 @@ static filter_status_t filter_cr_calculate_alpha(const float32_t fc, const float
     return status;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Fill sample buffer with value
+*
+* @param[in]    buf_inst    - Sample buffer instance
+* @param[in]    val         - Value to fill buffer with
+* @return       void
+*/
+////////////////////////////////////////////////////////////////////////////////
+static void filter_buf_fill(const p_ring_buffer_t buf_inst, const float32_t val)
+{
+    uint32_t size_of_buf = 0U;
+
+    // Get buffer size
+    (void) ring_buffer_get_size( buf_inst, &size_of_buf );
+
+    // Fill with wanted value
+    for ( uint32_t i = 0; i < size_of_buf; i++ )
+    {
+        (void) ring_buffer_add( buf_inst, (float32_t*) &val );
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -421,7 +445,7 @@ filter_status_t filter_rc_fc_set(p_filter_rc_t filter_inst, const float32_t fc)
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   	Get filter cutoff frequency
+*   	Get RC filter cutoff frequency
 *
 * @param[in]    filter_inst - RC filter instance
 * @param[out]   p_fc        - Filter cutoff frequency in Hz
@@ -455,7 +479,7 @@ filter_status_t filter_rc_fc_get(p_filter_rc_t filter_inst, float32_t * const p_
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*       Get filter sampling frequency
+*       Get RC filter sampling frequency
 *
 * @param[in]    filter_inst - RC filter instance
 * @param[out]   p_fs        - Filter sampling frequency in Hz
@@ -703,7 +727,7 @@ filter_status_t filter_cr_fc_set(p_filter_cr_t filter_inst, const float32_t fc)
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*       Get filter cutoff frequency
+*       Get CR filter cutoff frequency
 *
 * @param[in]    filter_inst - CR filter instance
 * @param[out]   p_fc        - Filter cutoff frequency in Hz
@@ -737,7 +761,7 @@ filter_status_t filter_cr_fc_get(p_filter_cr_t filter_inst, float32_t * const p_
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*       Get filter sampling frequency
+*       Get CR filter sampling frequency
 *
 * @param[in]    filter_inst - CR filter instance
 * @param[out]   p_fs        - Filter sampling frequency in Hz
@@ -769,32 +793,32 @@ filter_status_t filter_cr_fs_get(p_filter_cr_t filter_inst, float32_t * const p_
     return status;
 }
 
-
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *   Initialize FIR filter
 *
+* @note     Filter order cannot be changed later!
+*
+*
 * @param[in] 	p_filter_inst	- Pointer to FIR filter instance
-* @param[in] 	p_a				- Pointer to FIR coefficients
+* @param[in] 	p_a				- FIR coefficients
 * @param[in] 	order			- Number of taps
 * @return 		status			- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order)
+filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order, const float32_t init_value)
 {
 	filter_status_t 		status 		= eFILTER_OK;
 	ring_buffer_status_t	buf_status	= eRING_BUFFER_OK;
-	ring_buffer_attr_t		buf_attr	= 	{
-												.name		= NULL,
-												.p_mem 		= NULL,	// dynamic allocation
-												.override	= true,
-												.item_size	= sizeof( float32_t )
-											};
+
+	// Setup sample buffer
+	const ring_buffer_attr_t buf_attr =
+    {
+        .name		= NULL,
+        .p_mem 		= NULL,	// dynamic allocation
+        .override	= true,
+        .item_size	= sizeof( float32_t )
+    };
 
 	if 	(	( NULL != p_filter_inst )
 		&& 	( order > 0UL )
@@ -821,6 +845,9 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 				memcpy( (*p_filter_inst)->p_a, p_a, order * sizeof( float32_t ));
 				(*p_filter_inst)->order = order;
 
+				// Fill buffer with initial value
+				filter_buf_fill( (*p_filter_inst)->p_x, init_value );
+
 				// Init success
 				(*p_filter_inst)->is_init = true;
 			}
@@ -844,7 +871,33 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Update FIR filter
+*       Get initialization status of FIR filter
+*
+* @param[in]    filter_inst - FIR filter instance
+* @param[out]   p_is_init   - FIR filter init state
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_fir_is_init(p_filter_fir_t filter_inst, bool * const p_is_init)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_is_init ))
+    {
+        *p_is_init = filter_inst->is_init;
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   Handle FIR filter
 *
 *   General FIR differential equation:
 *
@@ -857,68 +910,40 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 *
 * @note Above described equation is basically convolution operation.
 *
-* @param[in] 	filter_inst	- Pointer to FIR filter instance
-* @param[in] 	x			- Input value
-* @return 		y			- Output value
+* @note This function must be called in equidistant time period defined by 1/fs,
+*       when calculating FIR filter coefficients (a)!
+*
+* @param[in]    filter_inst - FIR filter instance
+* @param[in]    in          - Input value
+* @param[out]   p_out       - Output (filtered) value
+* @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-float32_t filter_fir_update(p_filter_fir_t filter_inst, const float32_t x)
+filter_status_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in, float32_t * const p_out)
 {
-	float32_t 	y 		= 0.0f;
-	uint32_t 	i 		= 0UL;
-	float32_t 	buf_val = 0.0f;
+    filter_status_t status  = eFILTER_OK;
+	float32_t 	    buf_val = 0.0f;
 
 	// Check for instance and success init
-	if ( NULL != filter_inst )
+	if  (   ( NULL != filter_inst )
+	    &&  ( NULL != p_out ))
 	{
+	    // Is instance init?
 		if ( true == filter_inst->is_init )
 		{
 			// Add new sample to buffer
-			ring_buffer_add( filter_inst->p_x, (float32_t*) &x );
+			ring_buffer_add( filter_inst->p_x, (float32_t*) &in );
 
 			// Make convolution
-			for ( i = 0; i < filter_inst -> order; i++ )
+			for ( uint32_t i = 0; i < filter_inst->order; i++ )
 			{
 				// Get buffer value
-				ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val,  (( -i ) - 1 ));
+				ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val,  (( -i ) - 1U ));
 
 				// Calculate convolution
-				y += ( filter_inst->p_a[i] * buf_val );
+				*p_out += ( filter_inst->p_a[i] * buf_val );
 			}
 		}
-	}
-
-	return y;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*  	Get FIR filter coefficients
-*
-* @note This functions copy coefficients into place pointing by p_a
-* 		parameter
-*
-* @param[in] 	filter_inst	- Pointer to FIR filter instance
-* @param[out] 	p_a			- Pointer to read coefficient
-* @return 		status 		- Status of operation
-*/
-////////////////////////////////////////////////////////////////////////////////
-filter_status_t	filter_fir_get_coeff(p_filter_fir_t filter_inst, float32_t * const p_a)
-{
-	filter_status_t status = eFILTER_OK;
-
-	if 	(	( NULL != filter_inst )
-		&&	( NULL != p_a ))
-	{
-		if ( true == filter_inst->is_init )
-		{
-			// Copy coefficients
-			memcpy( p_a, filter_inst->p_a, ( filter_inst->order * sizeof(float32_t)));
-		}
-	}
-	else
-	{
-		status = eFILTER_ERROR;
 	}
 
 	return status;
@@ -926,22 +951,113 @@ filter_status_t	filter_fir_get_coeff(p_filter_fir_t filter_inst, float32_t * con
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*  		Get initialization status of filter
+*       Reset FIR filter buffers
 *
-* @param[in] 	filter_inst	- Pointer to FIR filter instance
-* @return 		is_init		- Initialization success flag
+* @param[in]    filter_inst - FIR filter instance
+* @param[in]    rst_value   - Reset value
+* @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-bool filter_fir_is_init(p_filter_fir_t filter_inst)
+filter_status_t filter_fir_reset(p_filter_fir_t filter_inst, const float32_t rst_value)
 {
-	bool is_init = false;
+    filter_status_t status  = eFILTER_OK;
 
-	if ( NULL != filter_inst )
-	{
-		is_init = filter_inst->is_init;
-	}
+    if ( NULL != filter_inst )
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            // First reset buffer
+            (void) ring_buffer_reset( filter_inst->p_x );
 
-	return is_init;
+            // Fill buffer with reset value
+            filter_buf_fill( filter_inst->p_x, rst_value );
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Set coefficient of FIR filter on-the-fly
+*
+* @note     It is recommended to reset filter afterwards!
+*
+* @note     Make sure to provide filter order size of coefficients!
+*
+*
+* @param[in]    filter_inst - FIR filter instance
+* @param[in]    p_a         - New FIR filter coefficients
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_fir_coeff_set(p_filter_fir_t filter_inst, const float32_t * const p_a)
+{
+    filter_status_t status  = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_a ))
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            // Get filter coefficient & order
+            memcpy( filter_inst->p_a, p_a, ( filter_inst->order * sizeof( float32_t )));
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Get FIR filter cutoff frequency
+*
+* @param[in]    filter_inst - RC filter instance
+* @param[out]   pp_a        - Pointer to pointer of FIR coefficients
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_fir_coeff_get(p_filter_fir_t filter_inst, float32_t ** const pp_a)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != pp_a ))
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            *pp_a = filter_inst->p_a;
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -964,27 +1080,27 @@ bool filter_fir_is_init(p_filter_fir_t filter_inst)
 *
 *
 * @param[in] 	p_filter_inst	- Pointer to IIR filter instance
-* @param[in] 	p_pole			- Pointer to IIR pole
-* @param[in] 	p_zero			- Pointer to IIR zeros
-* @param[in] 	pole_size		- Number of poles
-* @param[in] 	zero_size		- Number of zeros
+* @param[in] 	p_coeff         - IIR filter coefficients
 * @return 		status			- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const float32_t * p_pole, const float32_t * p_zero, const uint32_t pole_size, const uint32_t zero_size)
+filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff)
 {
 	filter_status_t 		status 		= eFILTER_OK;
 	ring_buffer_status_t 	buf_status 	= eRING_BUFFER_OK;
-	ring_buffer_attr_t		buf_attr	= 	{
-												.name		= NULL,
-												.p_mem 		= NULL,	// dynamic allocation
-												.override	= true,
-												.item_size	= sizeof( float32_t )
-											};
+
+	// Setup sample buffer
+	const ring_buffer_attr_t buf_attr =
+    {
+        .name		= NULL,
+        .p_mem 		= NULL,	// dynamic allocation
+        .override	= true,
+        .item_size	= sizeof( float32_t )
+    };
 
 	if 	(	( NULL != p_filter_inst )
-		&& 	(( pole_size > 0UL ) && ( pole_size > 0UL ))
-		&&	(( NULL != p_pole ) && ( NULL != p_zero )))
+		&& 	(( p_coeff->num_of_pole > 0UL ) && ( p_coeff->num_of_zero > 0UL ))
+		&&	(( NULL != p_coeff->p_pole ) && ( NULL != p_coeff->p_zero )))
 	{
 		// Allocate filter space
 		*p_filter_inst = malloc( sizeof( filter_iir_t ));
@@ -993,12 +1109,12 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const float32_t 
 		if ( NULL != *p_filter_inst )
 		{
 			// Create ring buffers
-			buf_status = ring_buffer_init( &(*p_filter_inst)->p_x, zero_size, &buf_attr );
-			buf_status |= ring_buffer_init( &(*p_filter_inst)->p_y, pole_size, &buf_attr );
+			buf_status  = ring_buffer_init( &(*p_filter_inst)->p_x, p_coeff->num_of_zero, &buf_attr );
+			buf_status |= ring_buffer_init( &(*p_filter_inst)->p_y, p_coeff->num_of_pole, &buf_attr );
 
 			// Allocate space for filter coefficients
-			(*p_filter_inst)->p_pole = malloc( pole_size * sizeof( float32_t ));
-			(*p_filter_inst)->p_zero = malloc( zero_size * sizeof( float32_t ));
+			(*p_filter_inst)->p_pole = malloc( p_coeff->num_of_pole * sizeof( float32_t ));
+			(*p_filter_inst)->p_zero = malloc( p_coeff->num_of_zero * sizeof( float32_t ));
 
 			// Check if ring buffer created
 			// and filter coefficient memory allocation succeed
@@ -1007,10 +1123,14 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const float32_t 
 				&&	( NULL != (*p_filter_inst)->p_zero  ))
 			{
 				// Get filter coefficient & order
-				memcpy( (*p_filter_inst)->p_pole, p_pole, pole_size * sizeof( float32_t ));
-				memcpy( (*p_filter_inst)->p_zero, p_zero, zero_size * sizeof( float32_t ));
-				(*p_filter_inst)->pole_size = pole_size;
-				(*p_filter_inst)->zero_size = zero_size;
+				memcpy( (*p_filter_inst)->p_pole, p_coeff->p_pole, p_coeff->num_of_pole * sizeof( float32_t ));
+				memcpy( (*p_filter_inst)->p_zero, p_coeff->p_zero, p_coeff->num_of_zero * sizeof( float32_t ));
+				(*p_filter_inst)->pole_size = p_coeff->num_of_pole;
+				(*p_filter_inst)->zero_size = p_coeff->num_of_zero;
+
+				// Fill buffers with zero
+				filter_buf_fill( (*p_filter_inst)->p_x, 0.0f );
+				filter_buf_fill( (*p_filter_inst)->p_y, 0.0f );
 
 				// Init success
 				(*p_filter_inst)->is_init = true;
@@ -1032,6 +1152,39 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const float32_t 
 
 	return status;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Get initialization status of IIR filter
+*
+* @param[in]    filter_inst - IIR filter instance
+* @param[out]   p_is_init   - IIR filter init state
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_iir_is_init(p_filter_iir_t filter_inst, bool * const p_is_init)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_is_init ))
+    {
+        *p_is_init = filter_inst->is_init;
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+
+
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -1531,25 +1684,9 @@ filter_status_t	filter_iir_hpf_norm_zeros_to_unity_gain	(const float32_t * const
 	return status;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/**
-*  		Get initialization status of filter
-*
-* @param[in] 	filter_inst	- Pointer to IIR filter instance
-* @return 		is_init		- Initialization success flag
-*/
-////////////////////////////////////////////////////////////////////////////////
-bool filter_iir_is_init(p_filter_iir_t filter_inst)
-{
-	bool is_init = false;
 
-	if ( NULL != filter_inst )
-	{
-		is_init = filter_inst->is_init;
-	}
 
-	return is_init;
-}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
