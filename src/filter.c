@@ -79,6 +79,7 @@ typedef struct filter_cr_s
 	float32_t * p_x;		/**<Input of filter + previous values */
 	float32_t  	alpha;		/**<Filter smoothing factor */
 	float32_t	fc;			/**<Filter cutoff frequency */
+    float32_t   fs;         /**<Filter sampling frequency */
 	uint8_t 	order;		/**<Filter order - number of cascaded filter */
 	bool		is_init;	/**<Filter instance initialization success flag */
 } filter_cr_t;
@@ -269,14 +270,14 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*       Get initialization status of filter
+*       Get initialization status of RC filter
 *
 * @param[in]    filter_inst - RC filter instance
-* @param[out]   p_is_init   - Pointer to RC filter instance
-* @return       is_init     - Initialization success flag
+* @param[out]   p_is_init   - RC filter init state
+* @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_rc_is_init(p_filter_rc_t const filter_inst, bool * const p_is_init)
+filter_status_t filter_rc_is_init(p_filter_rc_t filter_inst, bool * const p_is_init)
 {
     filter_status_t status = eFILTER_OK;
 
@@ -378,7 +379,7 @@ filter_status_t filter_rc_reset(p_filter_rc_t filter_inst, const float32_t rst_v
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   	Set cutoff frequency of filter on-the-fly
+*   	Set cutoff frequency of RC filter on-the-fly
 *
 * @param[in]    filter_inst - RC filter instance
 * @param[in] 	fc			- Cutoff frequency
@@ -486,22 +487,14 @@ filter_status_t filter_rc_fs_get(p_filter_rc_t filter_inst, float32_t * const p_
     return status;
 }
 
-
-
-
-
-
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *   Initialize CR filter
 *
 * @note	Order of CR filter is represented as number of cascaded CR
 *		analog equivalent circuits!
+*
+* @note Fs and order cannot be change later!
 *
 * @param[in] 	p_filter_inst	- Pointer to CR filter instance
 * @param[in] 	fc				- Filter cutoff frequency
@@ -513,7 +506,6 @@ filter_status_t filter_rc_fs_get(p_filter_rc_t filter_inst, float32_t * const p_
 filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order)
 {
 	filter_status_t status = eFILTER_OK;
-	uint8_t i;
 
 	if (( NULL != p_filter_inst ) && ( order > 0UL ))
 	{
@@ -537,7 +529,7 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
 				(*p_filter_inst)->fc = fc;
 
 				// Initial value
-				for ( i = 0; i < order; i++)
+				for ( uint32_t i = 0; i < order; i++)
 				{
 					(*p_filter_inst)->p_y[i] = 0.0f;
 					(*p_filter_inst)->p_x[i] = 0.0f;
@@ -562,49 +554,59 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*  		Get initialization status of filter
+*       Get initialization status of CR filter
 *
-* @param[in] 	filter_inst	- Pointer to CR filter instance
-* @return 		is_init		- Initialization success flag
+* @param[in]    filter_inst - CR filter instance
+* @param[out]   p_is_init   - CR filter init state
+* @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-bool filter_cr_is_init(p_filter_cr_t filter_inst)
+filter_status_t filter_cr_is_init(p_filter_cr_t filter_inst, bool * const p_is_init)
 {
-	bool is_init = false;
+    filter_status_t status = eFILTER_OK;
 
-	if ( NULL != filter_inst )
-	{
-		is_init = filter_inst->is_init;
-	}
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_is_init ))
+    {
+        *p_is_init = filter_inst->is_init;
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
 
-	return is_init;
+    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Update CR filter
+*       Handle CR filter
 *
-* @param[in] 	filter_inst	- Pointer to CR filter instance
-* @param[in] 	x			- Input value
-* @return 		y			- Output value
+* @note This function must be called in equidistant time period defined by 1/fs!
+*
+* @param[in]    filter_inst - CR filter instance
+* @param[in]    in          - Input value
+* @param[out]   p_out       - Output (filtered) value
+* @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-float32_t filter_cr_update(p_filter_cr_t filter_inst, const float32_t x)
+filter_status_t filter_cr_hndl(p_filter_cr_t filter_inst, const float32_t in, float32_t * const p_out)
 {
-	float32_t y = 0.0f;
-	uint8_t n;
+    filter_status_t status = eFILTER_OK;
 
 	// Check for instance and success init
-	if ( NULL != filter_inst )
+	if  (   ( NULL != filter_inst )
+	    &&  ( NULL != p_out ))
 	{
+        // Is instance init?
 		if ( true == filter_inst->is_init )
 		{
-			for ( n = 0; n < filter_inst->order; n++)
+			for ( uint32_t n = 0; n < filter_inst->order; n++)
 			{
 				if ( 0 == n )
 				{
-					filter_inst->p_y[0] = (( filter_inst->alpha * filter_inst->p_y[0] ) + ( filter_inst->alpha * ( x - filter_inst->p_x[0] )));
-					filter_inst->p_x[0] = x;
+					filter_inst->p_y[0] = (( filter_inst->alpha * filter_inst->p_y[0] ) + ( filter_inst->alpha * ( in - filter_inst->p_x[0] )));
+					filter_inst->p_x[0] = in;
 				}
 				else
 				{
@@ -613,45 +615,8 @@ float32_t filter_cr_update(p_filter_cr_t filter_inst, const float32_t x)
 				}
 			}
 
-			y = filter_inst->p_y[ filter_inst->order - 1U ];
+			*p_out = filter_inst->p_y[ filter_inst->order - 1U ];
 		}
-	}
-
-	return y;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*   	Change cutoff frequency of filter
-*
-* @param[in] 	filter_inst	- Filter instance
-* @param[in] 	fc			- Cutoff frequency
-* @param[in] 	fs			- Sample frequency
-* @return 		status		- Status of operation
-*/
-////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_cr_change_cutoff(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs)
-{
-	filter_status_t status 	= eFILTER_OK;
-	float32_t		alpha 	= 0.0f;
-
-	if ( NULL != filter_inst )
-	{
-		// Calculate new alpha
-		status = filter_cr_calculate_alpha( fc, fs, &alpha );
-
-		// Store data for newly set cutoff
-		if ( eFILTER_OK == status )
-		{
-			filter_inst->alpha = alpha;
-			filter_inst->fc = fc;
-		}
-	}
-	else
-	{
-		status = eFILTER_ERROR;
 	}
 
 	return status;
@@ -659,30 +624,156 @@ filter_status_t filter_cr_change_cutoff(p_filter_cr_t filter_inst, const float32
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   	Get filter cutoff frequency
+*       Reset CR filter buffers
 *
-* @param[in] 	filter_inst	- Filter instance
-* @return 		fc			- Filter cutoff frequency
+* @param[in]    filter_inst - CR filter instance
+* @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-float32_t filter_cr_get_cutoff(p_filter_cr_t filter_inst)
-{
-	float32_t fc = 0.0f;
-
-	if ( NULL != filter_inst )
-	{
-		fc = filter_inst->fc;
-	}
-
-	return fc;
-}
-
 filter_status_t filter_cr_reset(p_filter_cr_t filter_inst)
 {
+    filter_status_t status  = eFILTER_OK;
 
-    (void) filter_inst;
-    return 0;
+    if ( NULL != filter_inst )
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            // Initial value
+            for ( uint32_t i = 0; i < filter_inst->order; i++ )
+            {
+                filter_inst->p_y[i] = 0.0f;
+                filter_inst->p_x[i] = 0.0f;
+            }
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Set cutoff frequency of CR filter on-the-fly
+*
+* @param[in]    filter_inst - CR filter instance
+* @param[in]    fc          - Cutoff frequency
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_cr_fc_set(p_filter_cr_t filter_inst, const float32_t fc)
+{
+    filter_status_t status  = eFILTER_OK;
+    float32_t       alpha   = 0.0f;
+
+    if ( NULL != filter_inst )
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            // Calculate new alpha
+            status = filter_cr_calculate_alpha( fc, filter_inst->fs, &alpha );
+
+            // Store data for newly set cutoff
+            if ( eFILTER_OK == status )
+            {
+                filter_inst->alpha = alpha;
+                filter_inst->fc = fc;
+            }
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Get filter cutoff frequency
+*
+* @param[in]    filter_inst - CR filter instance
+* @param[out]   p_fc        - Filter cutoff frequency in Hz
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_cr_fc_get(p_filter_cr_t filter_inst, float32_t * const p_fc)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_fc ))
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            *p_fc = filter_inst->fc;
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Get filter sampling frequency
+*
+* @param[in]    filter_inst - CR filter instance
+* @param[out]   p_fs        - Filter sampling frequency in Hz
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_cr_fs_get(p_filter_cr_t filter_inst, float32_t * const p_fs)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_fs ))
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            *p_fs = filter_inst->fs;
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /**

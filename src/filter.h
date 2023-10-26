@@ -79,24 +79,29 @@ typedef float float32_t;
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
+
+// RC filter API
 filter_status_t filter_rc_init			(p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value);
-filter_status_t filter_rc_is_init       (p_filter_rc_t const filter_inst, bool * const p_is_init);
+filter_status_t filter_rc_is_init       (p_filter_rc_t filter_inst, bool * const p_is_init);
 filter_status_t filter_rc_hndl		    (p_filter_rc_t filter_inst, const float32_t in, float32_t * const p_out);
 filter_status_t filter_rc_reset         (p_filter_rc_t filter_inst, const float32_t rst_value);
 filter_status_t filter_rc_fc_set    	(p_filter_rc_t filter_inst, const float32_t fc);
 filter_status_t filter_rc_fc_get	    (p_filter_rc_t filter_inst, float32_t * const p_fc);
 filter_status_t filter_rc_fs_get	    (p_filter_rc_t filter_inst, float32_t * const p_fs);
 
-
-
-
-
+// CR filter API
 filter_status_t filter_cr_init			(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order);
-float32_t 		filter_cr_update		(p_filter_cr_t filter_inst, const float32_t x);
-filter_status_t filter_cr_change_cutoff	(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs);
-float32_t		filter_cr_get_cutoff	(p_filter_cr_t filter_inst);
-bool			filter_cr_is_init		(p_filter_cr_t filter_inst);
+filter_status_t filter_cr_is_init       (p_filter_cr_t filter_inst, bool * const p_is_init);
+filter_status_t filter_cr_hndl		    (p_filter_cr_t filter_inst, const float32_t in, float32_t * const p_out);
 filter_status_t filter_cr_reset         (p_filter_cr_t filter_inst);
+filter_status_t filter_cr_fc_set        (p_filter_cr_t filter_inst, const float32_t fc);
+filter_status_t filter_cr_fc_get        (p_filter_cr_t filter_inst, float32_t * const p_fc);
+filter_status_t filter_cr_fs_get        (p_filter_cr_t filter_inst, float32_t * const p_fs);
+
+
+
+
+
 
 filter_status_t filter_fir_init			(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order);
 float32_t		filter_fir_update		(p_filter_fir_t filter_inst, const float32_t x);
