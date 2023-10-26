@@ -84,6 +84,7 @@ float32_t 		filter_rc_update		(p_filter_rc_t filter_inst, const float32_t x);
 filter_status_t filter_rc_change_cutoff	(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs);
 float32_t		filter_rc_get_cutoff	(p_filter_rc_t filter_inst);
 bool			filter_rc_is_init		(p_filter_rc_t filter_inst);
+filter_status_t filter_rc_reset         (p_filter_rc_t filter_inst);
 
 filter_status_t filter_cr_init			(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order);
 float32_t 		filter_cr_update		(p_filter_cr_t filter_inst, const float32_t x);
@@ -114,6 +115,7 @@ filter_status_t	filter_bool_is_init			(p_filter_bool_t filter_inst, bool * const
 filter_status_t	filter_bool_update			(p_filter_bool_t filter_inst, const bool in, bool * const p_out);
 filter_status_t filter_bool_get_fc			(p_filter_bool_t filter_inst, float32_t * const p_fc);
 filter_status_t filter_bool_change_cutoff	(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs);
+filter_status_t filter_bool_reset           (p_filter_bool_t filter_inst);
 
 #endif // __FILTER_H
 

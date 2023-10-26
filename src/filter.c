@@ -41,15 +41,19 @@
 /**
  * 	Compatibility check with RING_BUFFER
  *
- * 	Support version V2.0.x
+ * 	Support version V2.x.x
  */
-static_assert( 2 == RING_BUFFER_VER_MAJOR );
-static_assert( 0 == RING_BUFFER_VER_MINOR );
+_Static_assert( 2 == RING_BUFFER_VER_MAJOR );
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
+
+/**
+ *  Two times PI
+ */
+#define M_TWOPI            ((float32_t) ( 2.0 * M_PI ))
 
 /**
  * 	RC Filter data
@@ -327,6 +331,27 @@ float32_t filter_rc_get_cutoff(p_filter_rc_t filter_inst)
 	}
 
 	return fc;
+}
+
+
+filter_status_t filter_rc_reset(p_filter_rc_t filter_inst)
+{
+	filter_status_t status 	= eFILTER_OK;
+
+	if ( NULL != filter_inst )
+	{
+        // Initial value
+        for ( uint32_t i = 0; i < filter_inst->order; i++)
+        {
+            filter_inst->p_y[i] = 0.0f;
+        }   
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1536,7 +1561,31 @@ filter_status_t filter_bool_change_cutoff(p_filter_bool_t filter_inst, const flo
 
 	if ( NULL != filter_inst )
 	{
-		status = filter_rc_change_cutoff( filter_inst->lpf, fc, fs) ;
+		status = filter_rc_change_cutoff( filter_inst->lpf, fc, fs );
+	}
+	else
+	{
+		status = eFILTER_ERROR;
+	}
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*  	Reset boolean filter
+*
+* @param[in] 	filter_inst	- Filter instance
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_bool_reset(p_filter_bool_t filter_inst)
+{
+	filter_status_t status 	= eFILTER_OK;
+
+	if ( NULL != filter_inst )
+	{
+		status = filter_rc_reset( filter_inst->lpf );
 	}
 	else
 	{
