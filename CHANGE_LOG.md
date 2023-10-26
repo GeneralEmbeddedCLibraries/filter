@@ -1,8 +1,22 @@
-# Changelog
+ Changelog
 All notable changes to this project/module will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project/module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+## V2.0.0 - 26.10.2023
+
+### Notice
+ - Complete API change from V1.x.x, therefore module is not back-compatible with older versions!
+
+### Added
+ - Option to reset filter
+ - Own definition of 2*pi, as standard <math.h> has only M_PI define
+
+### Changed
+ - Unifying return statuses of API functions
+ - Convert tabs to spaces
 
 ---
 ## V1.1.0 - 03.11.2022
