@@ -792,6 +792,286 @@ filter_status_t filter_cr_fs_get(p_filter_cr_t filter_inst, float32_t * const p_
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
+*   Initialize boolean/debounce filter
+*
+* @brief    Boolean filter is basically LPF (RC filter) + comparator
+*           at the end of signal path.
+*
+*           Input to filter in bool and output of filer is bool. Signal
+*           in between is being converted to float either 0.0f or 1.0f. That
+*           signal then goes to LPF. Output of LPF goes to schmitt trigger
+*           comparator with configurable trip levels at init phase
+*
+*           Input "comp_lvl" setup comparator trip level symmetrical to 0.5
+*           value. E.g.: comp_lvl = 0.1 will result in levels:
+*
+*               OFF -> ON:  level = 0.9
+*               ON  -> OFF: level = 0.1
+*
+* @param[in]    filter_inst - Pointer to bool filter instance
+* @param[in]    fc          - Cuttoff frequency of LPF
+* @param[in]    fs          - Sample time of filter
+* @param[in]    comp_lvl    - Comparator trip level
+* @return       status      - Status of initialization
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if ( NULL != p_filter_inst )
+    {
+        // Allocate space
+        *p_filter_inst = malloc( sizeof( filter_bool_t ));
+
+        // Check if allocation succeed & valid configs
+        if  (   ( NULL != p_filter_inst )
+            &&  (( comp_lvl > 0.0f ) && ( comp_lvl < 0.4f )))
+        {
+            // Init LPF
+            status = filter_rc_init( &(*p_filter_inst)->lpf, fc, fs, 1, 0.0f );
+
+            if ( eFILTER_OK == status )
+            {
+                (*p_filter_inst)->comp_lvl  = comp_lvl;
+                (*p_filter_inst)->y = false;
+
+                // Init succeed
+                (*p_filter_inst)->is_init = true;
+            }
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Get initialization status of boolean filter
+*
+* @param[in]    filter_inst - Boolean filter instance
+* @param[out]   p_is_init   - Boolean filter init state
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_is_init)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_is_init ))
+    {
+        *p_is_init = filter_inst->is_init;
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Handle boolean filter
+*
+* @note This function must be called in equidistant time period defined by 1/fs!
+*
+* @param[in]    filter_inst - Boolean filter instance
+* @param[in]    in          - Input value
+* @param[out]   p_out       - Output (filtered) value
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_bool_hndl(p_filter_bool_t filter_inst, const bool in, bool * const p_out)
+{
+    filter_status_t status      = eFILTER_OK;
+    float32_t       filt_in     = 0.0f;
+    float32_t       filt_out    = 0.0f;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_out ))
+    {
+        // Convert input to floating
+        filt_in = (float32_t) in;
+
+        // Apply filter
+        (void) filter_rc_hndl( filter_inst->lpf, filt_in, &filt_out );
+
+        // Apply comparator
+        if  (   ( false == filter_inst->y )
+            &&  ( filt_out >= ( 1.0f - filter_inst->comp_lvl )))
+        {
+            filter_inst->y  = true;
+        }
+        else if (   ( true == filter_inst->y )
+                &&  ( filt_out <= filter_inst->comp_lvl ))
+        {
+            filter_inst->y  = false;
+        }
+        else
+        {
+            // No actions...
+        }
+
+        // Return output
+        *p_out = filter_inst->y ;
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Reset Boolean filter buffers
+*
+* @param[in]    filter_inst - Boolean filter instance
+* @param[in]    rst_value   - Reset value
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_bool_reset(p_filter_bool_t filter_inst)
+{
+    filter_status_t status  = eFILTER_OK;
+
+    if ( NULL != filter_inst )
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            // Reset LPF
+            (void) filter_rc_reset( filter_inst->lpf, 0.0f );
+            filter_inst->y = false;
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Set cutoff frequency of Boolean filter on-the-fly
+*
+* @param[in]    filter_inst - Boolean filter instance
+* @param[in]    fc          - Cutoff frequency
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_boot_fc_set(p_filter_bool_t filter_inst, const float32_t fc)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if ( NULL != filter_inst )
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            // Set LPF fc
+            status = filter_rc_fc_set( filter_inst->lpf, fc );
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Get Boolean filter cutoff frequency
+*
+* @param[in]    filter_inst - Boolean filter instance
+* @param[out]   p_fc        - Filter cutoff frequency in Hz
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_bool_fc_get(p_filter_bool_t filter_inst, float32_t * const p_fc)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_fc ))
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            (void) filter_rc_fc_get( filter_inst->lpf, p_fc );
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*       Get Boolean filter sampling frequency
+*
+* @param[in]    filter_inst - RC filter instance
+* @param[out]   p_fs        - Filter sampling frequency in Hz
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_bool_fs_get(p_filter_bool_t filter_inst, float32_t * const p_fs)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if  (   ( NULL != filter_inst )
+        &&  ( NULL != p_fs ))
+    {
+        // Is instance init?
+        if ( true == filter_inst->is_init )
+        {
+            (void) filter_rc_fs_get( filter_inst->lpf, p_fs );
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
 *   Initialize FIR filter
 *
 * @note     Filter order cannot be changed later!
@@ -1352,21 +1632,13 @@ filter_status_t filter_iir_coeff_get(p_filter_iir_t filter_inst, filter_iir_coef
     return status;
 }
 
-
-
-
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *   Calculate IIR 2nd order low pass filter coefficients
 *
-*@note: Equations taken from: https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
+* @note      Equations taken from: https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 *
-*@note: Additional check is made if sampling theorem is fulfilled.
+* @note      Additional check is made if sampling theorem is fulfilled.
 *
 * @param[in] 	fc			- Cutoff frequency
 * @param[in] 	zeta		- Damping factor
@@ -1376,7 +1648,7 @@ filter_status_t filter_iir_coeff_get(p_filter_iir_t filter_inst, filter_iir_coef
 * @return 		status		- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_iir_calc_coeff_2nd_lpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)
+filter_status_t filter_iir_coeff_calc_2nd_lpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)
 {
 	filter_status_t status 		= eFILTER_OK;
 	float32_t		omega		= 0.0f;
@@ -1418,9 +1690,9 @@ filter_status_t filter_iir_calc_coeff_2nd_lpf(const float32_t fc, const float32_
 /**
 *   Calculate IIR 2nd order high pass filter coefficients
 *
-*@note: Equations taken from: https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
+* @note     Equations taken from: https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 *
-*@note: Additional check is made if sampling theorem is fulfilled.
+* @note     Additional check is made if sampling theorem is fulfilled.
 *
 * @param[in] 	fc			- Cutoff frequency
 * @param[in] 	zeta		- Damping factor
@@ -1430,7 +1702,7 @@ filter_status_t filter_iir_calc_coeff_2nd_lpf(const float32_t fc, const float32_
 * @return 		status		- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_iir_calc_coeff_2nd_hpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)
+filter_status_t filter_iir_coeff_calc_2nd_hpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)
 {
 	filter_status_t status 		= eFILTER_OK;
 	float32_t		omega		= 0.0f;
@@ -1472,12 +1744,12 @@ filter_status_t filter_iir_calc_coeff_2nd_hpf(const float32_t fc, const float32_
 /**
 *   Calculate IIR 2nd order notch (band stop) filter coefficients
 *
-*@note: Equations taken from: https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
+* @note     Equations taken from: https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 *
-*@note: Additional check is made if sampling theorem is fulfilled.
+* @note     Additional check is made if sampling theorem is fulfilled.
 *
-*@note: Value of r must be within 0.0 and 1.0, typically it is around
-*		0.80 - 0.99.
+* @note     Value of r must be within 0.0 and 1.0, typically it is around
+*		    0.80 - 0.99.
 *
 * @param[in] 	fc			- Cutoff frequency
 * @param[in] 	r			- Bandwidth of filter
@@ -1487,7 +1759,7 @@ filter_status_t filter_iir_calc_coeff_2nd_hpf(const float32_t fc, const float32_
 * @return 		status		- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_iir_calc_coeff_2nd_notch(const float32_t fc, const float32_t r, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)
+filter_status_t filter_iir_coeff_calc_2nd_bpf(const float32_t fc, const float32_t r, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)
 {
 	filter_status_t status 		= eFILTER_OK;
 	float32_t		omega		= 0.0f;
@@ -1538,42 +1810,37 @@ filter_status_t filter_iir_calc_coeff_2nd_notch(const float32_t fc, const float3
 *		where: 	a - poles
 *				b - zeros
 *
-* @param[in] 	p_pole		- Pointer to IIR poles
-* @param[in] 	p_zero		- Pointer to IIR zeros
-* @param[in] 	pole_size	- Number of poles
-* @param[in] 	zero_size	- Number of zeros
-* @return 		dc_gain		- Gain of filter at zero (DC) frequency
+* @param[in] 	p_coeff - IIR filter coefficients
+* @return 		dc_gain - Gain of filter at zero (DC) frequency
 */
 ////////////////////////////////////////////////////////////////////////////////
-float32_t filter_iir_calc_lpf_gain(const float32_t * const p_pole, const float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
+float32_t filter_iir_calc_lpf_gain(const filter_iir_coeff_t * const p_coeff)
 {
 	float32_t dc_gain 	= NAN;
 	float32_t pole_sum 	= 0.0f;
 	float32_t zero_sum 	= 0.0f;
-	uint32_t i;
 
-	if 	(	( NULL != p_pole )
-		&&	( NULL != p_zero ))
+	if ( NULL != p_coeff )
 	{
 		// Sum poles & zeros
-		for( i = 1; i < pole_size; i++ )
+		for( uint32_t i = 1; i < p_coeff->num_of_pole; i++ )
 		{
-			pole_sum += p_pole[i];
+			pole_sum += p_coeff->p_pole[i];
 		}
 
-		for( i = 0; i < zero_size; i++ )
+		for( uint32_t i = 0; i < p_coeff->num_of_zero; i++ )
 		{
-			zero_sum += p_zero[i];
+			zero_sum += p_coeff->p_zero[i];
 		}
 
 		// Calculate gain at 0 frequency
-		if ( p_pole[0] != 0.0f )
+		if ( p_coeff->p_pole[0] != 0.0f )
 		{
-			pole_sum = (( pole_sum / p_pole[0] ) + 1.0f );
+			pole_sum = (( pole_sum / p_coeff->p_pole[0] ) + 1.0f );
 
 			if ( pole_sum != 0.0f )
 			{
-				dc_gain = (( zero_sum / pole_sum ) / p_pole[0] );
+				dc_gain = (( zero_sum / pole_sum ) / p_coeff->p_pole[0] );
 			}
 		}
 	}
@@ -1603,52 +1870,51 @@ float32_t filter_iir_calc_lpf_gain(const float32_t * const p_pole, const float32
 * @param[in] 	p_zero		- Pointer to IIR zeros
 * @param[in] 	pole_size	- Number of poles
 * @param[in] 	zero_size	- Number of zeros
-* @return 		dc_gain		- Gain of filter at 0.5 normalized frequency
+* @return 		dc_gain		- Gain of filter at 0.5 normalized frequency (Nyquist freq)
 */
 ////////////////////////////////////////////////////////////////////////////////
-float32_t filter_iir_calc_hpf_gain(const float32_t * const p_pole, const float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
+float32_t filter_iir_calc_hpf_gain(const filter_iir_coeff_t * const p_coeff)
 {
 	float32_t dc_gain 	= NAN;
 	float32_t pole_sum 	= 0.0f;
 	float32_t zero_sum 	= 0.0f;
-	uint32_t i;
 
-	if 	(	( NULL != p_pole )
-		&&	( NULL != p_zero ))
+	if ( NULL != p_coeff)
 	{
-		// Sum poles & zeros
-		for( i = 1; i < pole_size; i++ )
+		// Sum poles
+		for( uint32_t i = 1; i < p_coeff->num_of_pole; i++ )
 		{
 			if ( i & 0x01U )
 			{
-				pole_sum -= p_pole[i];
+				pole_sum -= p_coeff->p_pole[i];
 			}
 			else
 			{
-				pole_sum += p_pole[i];
+				pole_sum += p_coeff->p_pole[i];
 			}
 		}
 
-		for( i = 0; i < zero_size; i++ )
+		// Sum zeros
+		for( uint32_t i = 0; i < p_coeff->num_of_zero; i++ )
 		{
 			if ( i & 0x01U )
 			{
-				zero_sum -= p_zero[i];
+				zero_sum -= p_coeff->p_zero[i];
 			}
 			else
 			{
-				zero_sum += p_zero[i];
+				zero_sum += p_coeff->p_zero[i];
 			}
 		}
 
 		// Calculate gain at Nyquist frequency
-		if ( p_pole[0] != 0.0f )
+		if ( p_coeff->p_pole[0] != 0.0f )
 		{
-			pole_sum = (( pole_sum / p_pole[0] ) + 1.0f );
+			pole_sum = (( pole_sum / p_coeff->p_pole[0] ) + 1.0f );
 
 			if ( pole_sum != 0.0f )
 			{
-				dc_gain = (( zero_sum / pole_sum ) / p_pole[0] );
+				dc_gain = (( zero_sum / pole_sum ) / p_coeff->p_pole[0] );
 			}
 		}
 	}
@@ -1672,32 +1938,26 @@ float32_t filter_iir_calc_hpf_gain(const float32_t * const p_pole, const float32
 *		zeros of IIR filter with it. Thus only zeros are affected by
 *		this function math.
 *
-* @param[in] 	p_pole		- Pointer to IIR poles
-* @param[in] 	p_zero		- Pointer to IIR zeros
-* @param[in] 	pole_size	- Number of poles
-* @param[in] 	zero_size	- Number of zeros
-* @return 		status		- Status of operation
+* @param[in] 	p_coeff - IIR filter coefficients
+* @return 		status  - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t	filter_iir_lpf_norm_zeros_to_unity_gain(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
+filter_status_t	filter_iir_coeff_to_unity_gain_lpf(filter_iir_coeff_t * const p_coeff)
 {
-	filter_status_t status 		= eFILTER_OK;
-	float32_t		dc_gain		= 0.0f;
-	uint32_t		i;
+	filter_status_t status = eFILTER_OK;
 
-	if 	(	( NULL != p_pole )
-		&&	( NULL != p_zero ))
+	if ( NULL != p_coeff )
 	{
 		// Calculate DC gain
-		dc_gain = filter_iir_calc_lpf_gain( p_pole, p_zero, pole_size, zero_size );
+		const float32_t dc_gain = filter_iir_calc_lpf_gain( p_coeff );
 
 		// Check gain
 		if ( dc_gain > 0.0f )
 		{
 			// Normalize zeros
-			for ( i = 0; i < zero_size; i++ )
+			for ( uint32_t i = 0; i < p_coeff->num_of_zero; i++ )
 			{
-				p_zero[i] = ( p_zero[i] / dc_gain );
+				p_coeff->p_zero[i] = ( p_coeff->p_zero[i] / dc_gain );
 			}
 		}
 	}
@@ -1726,261 +1986,28 @@ filter_status_t	filter_iir_lpf_norm_zeros_to_unity_gain(const float32_t * const 
 *		zeros of IIR filter with it. Thus only zeros are affected by
 *		this function math.
 *
-* @param[in] 	p_pole		- Pointer to IIR poles
-* @param[in] 	p_zero		- Pointer to IIR zeros
-* @param[in] 	pole_size	- Number of poles
-* @param[in] 	zero_size	- Number of zeros
-* @return 		status		- Status of operation
+* @param[in]    p_coeff - IIR filter coefficients
+* @return       status  - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t	filter_iir_hpf_norm_zeros_to_unity_gain	(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size)
+filter_status_t	filter_iir_coeff_to_unity_gain_hpf(filter_iir_coeff_t * const p_coeff)
 {
-	filter_status_t status 		= eFILTER_OK;
-	float32_t		dc_gain		= 0.0f;
-	uint32_t		i;
+	filter_status_t status = eFILTER_OK;
 
-	if 	(	( NULL != p_pole )
-		&&	( NULL != p_zero ))
+	if ( NULL != p_coeff )
 	{
 		// Calculate DC gain
-		dc_gain = filter_iir_calc_hpf_gain( p_pole, p_zero, pole_size, zero_size );
+		const float32_t dc_gain = filter_iir_calc_hpf_gain( p_coeff );
 
 		// Check gain
 		if ( dc_gain > 0.0f )
 		{
 			// Normalize zeros
-			for ( i = 0; i < zero_size; i++ )
+			for ( uint32_t i = 0; i < p_coeff->num_of_zero; i++ )
 			{
-				p_zero[i] = ( p_zero[i] / dc_gain );
+			    p_coeff->p_zero[i] = ( p_coeff->p_zero[i] / dc_gain );
 			}
 		}
-	}
-	else
-	{
-		status = eFILTER_ERROR;
-	}
-
-	return status;
-}
-
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*  	Initialize boolean filter
-*
-* @brief	Boolean filter is basically LPF (RC filter) + comparator
-* 			at the end of signal path.
-*
-* 			Input to filter in bool and output of filer is bool. Signal
-* 			in between is being converted to float either 0.0f or 1.0f. That
-* 			signal then goes to LPF. Output of LPF goes to schmitt trigger
-* 			comparator with configurable trip levels at init phase
-*
-* 			Input "comp_lvl" setup comparator trip level symmetrical to 0.5
-* 			value. E.g.: comp_lvl = 0.1 will result in levels:
-*
-* 				OFF -> ON:	level = 0.9
-* 				ON 	-> OFF:	level = 0.1
-*
-* @param[in] 	filter_inst	- Pointer to bool filter instance
-* @param[in] 	fc			- Cuttoff frequency of LPF
-* @param[in] 	fs			- Sample time of filter
-* @param[in] 	comp_lvl	- Comparator trip level
-* @return 		status 		- Status of initialization
-*/
-////////////////////////////////////////////////////////////////////////////////
-filter_status_t	filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)
-{
-	filter_status_t status = eFILTER_OK;
-
-	if ( NULL != p_filter_inst )
-	{
-		// Allocate space
-		*p_filter_inst = malloc( sizeof( filter_bool_t ));
-
-		// Check if allocation succeed & valid configs
-		if 	(	( NULL != p_filter_inst )
-			&&	(( comp_lvl > 0.0f ) && ( comp_lvl < 0.4f )))
-		{
-			// Init LPF
-			status = filter_rc_init( &(*p_filter_inst)->lpf, fc, fs, 1, 0.0f );
-
-			if ( eFILTER_OK == status )
-			{
-				(*p_filter_inst)->comp_lvl 	= comp_lvl;
-				(*p_filter_inst)->y = false;
-
-				// Init succeed
-				(*p_filter_inst)->is_init = true;
-			}
-		}
-		else
-		{
-			status = eFILTER_ERROR;
-		}
-	}
-	else
-	{
-		status = eFILTER_ERROR;
-	}
-
-	return status;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*  	Update boolean filter
-*
-* @param[in] 	filter_inst	- Filter instance
-* @param[in] 	p_is_init	- Pointer to is init flag
-* @return 		status 		- Status of operation
-*/
-////////////////////////////////////////////////////////////////////////////////
-filter_status_t	filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_is_init)
-{
-	filter_status_t status = eFILTER_OK;
-
-	if 	(	( NULL != filter_inst )
-		&& 	( NULL != p_is_init ))
-	{
-		*p_is_init = filter_inst->is_init;
-	}
-	else
-	{
-		status = eFILTER_ERROR;
-	}
-
-	return status;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*  	Update boolean filter
-*
-* @param[in] 	filter_inst	- Filter instance
-* @param[in] 	in			- Input value
-* @param[out] 	p_out		- Output value
-* @return 		status 		- Status of operation
-*/
-////////////////////////////////////////////////////////////////////////////////
-filter_status_t	filter_bool_update(p_filter_bool_t filter_inst, const bool in, bool * const p_out)
-{
-	filter_status_t status 		= eFILTER_OK;
-	float32_t		filt_in 	= 0.0f;
-	float32_t		filt_out	= 0.0f;
-
-	if ( NULL != filter_inst )
-	{
-		// Convert input to floating
-		filt_in = (float32_t) in;
-
-		// Apply filter
-		(void) filter_rc_hndl( filter_inst->lpf, filt_in, &filt_out );
-
-		// Apply comparator
-		if 	(	( false == filter_inst->y )
-			&& 	( filt_out >= ( 1.0f - filter_inst->comp_lvl )))
-		{
-			filter_inst->y  = true;
-		}
-
-		else if (	( true == filter_inst->y )
-				&& 	( filt_out <= filter_inst->comp_lvl ))
-		{
-			filter_inst->y  = false;
-		}
-
-		else
-		{
-			// No actions...
-		}
-
-		// Return output
-		if ( NULL != p_out )
-		{
-			*p_out = filter_inst->y ;
-		}
-	}
-	else
-	{
-		status = eFILTER_ERROR;
-	}
-
-	return status;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*  	Get boolean cutoff frequency
-*
-* @param[in] 	filter_inst	- Filter instance
-* @param[out] 	p_fc		- Pointer to cuttoff freq
-* @return 		status 		- Status of operation
-*/
-////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_bool_get_fc(p_filter_bool_t filter_inst, float32_t * const p_fc)
-{
-	filter_status_t status = eFILTER_OK;
-
-	if 	(	( NULL != filter_inst )
-		&& 	( NULL != p_fc ))
-	{
-		*p_fc = filter_inst->lpf->fc;
-	}
-	else
-	{
-		status = eFILTER_ERROR;
-	}
-
-	return status;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*  	Change boolean filter cuttoff freq
-*
-* @param[in] 	filter_inst	- Filter instance
-* @param[in] 	fc			- Cuttoff frequency of LPF
-* @param[in] 	fs			- Sample time of filter
-* @return 		status 		- Status of operation
-*/
-////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_bool_change_cutoff(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs)
-{
-	filter_status_t status 	= eFILTER_OK;
-
-	if ( NULL != filter_inst )
-	{
-	    // TODO:
-	    (void) fs;
-		status = filter_rc_fc_set( filter_inst->lpf, fc );
-	}
-	else
-	{
-		status = eFILTER_ERROR;
-	}
-
-	return status;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*  	Reset boolean filter
-*
-* @param[in] 	filter_inst	- Filter instance
-* @return 		status 		- Status of operation
-*/
-////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_bool_reset(p_filter_bool_t filter_inst)
-{
-	filter_status_t status 	= eFILTER_OK;
-
-	if ( NULL != filter_inst )
-	{
-		status = filter_rc_reset( filter_inst->lpf, 0.0f );
 	}
 	else
 	{

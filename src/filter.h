@@ -109,6 +109,15 @@ filter_status_t filter_cr_fc_set        (p_filter_cr_t filter_inst, const float3
 filter_status_t filter_cr_fc_get        (p_filter_cr_t filter_inst, float32_t * const p_fc);
 filter_status_t filter_cr_fs_get        (p_filter_cr_t filter_inst, float32_t * const p_fs);
 
+// Boolean (debouncing) LPF filter API
+filter_status_t filter_bool_init        (p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl);
+filter_status_t filter_bool_is_init     (p_filter_bool_t filter_inst, bool * const p_is_init);
+filter_status_t filter_bool_hndl        (p_filter_bool_t filter_inst, const bool in, bool * const p_out);
+filter_status_t filter_bool_reset       (p_filter_bool_t filter_inst);
+filter_status_t filter_bool_fc_set      (p_filter_bool_t filter_inst, const float32_t fc);
+filter_status_t filter_bool_fc_get      (p_filter_bool_t filter_inst, float32_t * const p_fc);
+filter_status_t filter_bool_fs_get      (p_filter_bool_t filter_inst, float32_t * const p_fs);
+
 // FIR filter API
 filter_status_t filter_fir_init			(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order, const float32_t init_value);
 filter_status_t filter_fir_is_init      (p_filter_fir_t filter_inst, bool * const p_is_init);
@@ -125,29 +134,14 @@ filter_status_t filter_iir_reset		(p_filter_iir_t filter_inst);
 filter_status_t filter_iir_coeff_set    (p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff);
 filter_status_t filter_iir_coeff_get    (p_filter_iir_t filter_inst, filter_iir_coeff_t ** const pp_coeff);
 
-
-
 // IIR helper functions
-
-
-
-filter_status_t filter_iir_calc_coeff_2nd_lpf			(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero);
-filter_status_t filter_iir_calc_coeff_2nd_hpf			(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero);
-filter_status_t filter_iir_calc_coeff_2nd_notch			(const float32_t fc, const float32_t r, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero);
-float32_t		filter_iir_calc_lpf_gain				(const float32_t * const p_pole, const float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size);
-float32_t		filter_iir_calc_hpf_gain				(const float32_t * const p_pole, const float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size);
-filter_status_t	filter_iir_lpf_norm_zeros_to_unity_gain	(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size);
-filter_status_t	filter_iir_hpf_norm_zeros_to_unity_gain	(const float32_t * const p_pole, float32_t * const p_zero, const uint32_t pole_size, const uint32_t zero_size);
-
-
-
-// Boolean (debouncing) filter API
-filter_status_t	filter_bool_init			(p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl);
-filter_status_t	filter_bool_is_init			(p_filter_bool_t filter_inst, bool * const p_is_init);
-filter_status_t	filter_bool_update			(p_filter_bool_t filter_inst, const bool in, bool * const p_out);
-filter_status_t filter_bool_get_fc			(p_filter_bool_t filter_inst, float32_t * const p_fc);
-filter_status_t filter_bool_change_cutoff	(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs);
-filter_status_t filter_bool_reset           (p_filter_bool_t filter_inst);
+filter_status_t filter_iir_coeff_calc_2nd_lpf       (const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero);
+filter_status_t filter_iir_coeff_calc_2nd_hpf       (const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero);
+filter_status_t filter_iir_coeff_calc_2nd_bpf       (const float32_t fc, const float32_t r, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero);
+float32_t       filter_iir_calc_lpf_gain	        (const filter_iir_coeff_t * const p_coeff);
+float32_t		filter_iir_calc_hpf_gain	        (const filter_iir_coeff_t * const p_coeff);
+filter_status_t filter_iir_coeff_to_unity_gain_lpf  (filter_iir_coeff_t * const p_coeff);
+filter_status_t filter_iir_coeff_to_unity_gain_hpf  (filter_iir_coeff_t * const p_coeff);
 
 #endif // __FILTER_H
 
