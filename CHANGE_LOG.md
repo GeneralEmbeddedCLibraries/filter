@@ -1,8 +1,18 @@
-# Changelog
+ Changelog
 All notable changes to this project/module will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project/module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+## V2.0.0 - 26.10.2023
+
+### Added
+ - Option to reset filter
+
+### Changed
+ - Complete API changed
+ - Unifying return statuses of API functions
 
 ---
 ## V1.1.0 - 03.11.2022
