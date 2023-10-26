@@ -622,9 +622,9 @@ filter_status_t filter_cr_hndl(p_filter_cr_t filter_inst, const float32_t in, fl
         // Is instance init?
 		if ( true == filter_inst->is_init )
 		{
-			for ( uint32_t n = 0; n < filter_inst->order; n++)
+			for ( uint32_t n = 0U; n < filter_inst->order; n++)
 			{
-				if ( 0 == n )
+				if ( 0U == n )
 				{
 					filter_inst->p_y[0] = (( filter_inst->alpha * filter_inst->p_y[0] ) + ( filter_inst->alpha * ( in - filter_inst->p_x[0] )));
 					filter_inst->p_x[0] = in;
@@ -661,7 +661,7 @@ filter_status_t filter_cr_reset(p_filter_cr_t filter_inst)
         if ( true == filter_inst->is_init )
         {
             // Initial value
-            for ( uint32_t i = 0; i < filter_inst->order; i++ )
+            for ( uint32_t i = 0U; i < filter_inst->order; i++ )
             {
                 filter_inst->p_y[i] = 0.0f;
                 filter_inst->p_x[i] = 0.0f;
@@ -829,7 +829,7 @@ filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_
             &&  (( comp_lvl > 0.0f ) && ( comp_lvl < 0.4f )))
         {
             // Init LPF
-            status = filter_rc_init( &(*p_filter_inst)->lpf, fc, fs, 1, 0.0f );
+            status = filter_rc_init( &(*p_filter_inst)->lpf, fc, fs, 1U, 0.0f );
 
             if ( eFILTER_OK == status )
             {
@@ -923,7 +923,7 @@ filter_status_t filter_bool_hndl(p_filter_bool_t filter_inst, const bool in, boo
         }
 
         // Return output
-        *p_out = filter_inst->y ;
+        *p_out = filter_inst->y;
     }
     else
     {
@@ -1212,7 +1212,7 @@ filter_status_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in, 
 			ring_buffer_add( filter_inst->p_x, (float32_t*) &in );
 
 			// Make convolution
-			for ( uint32_t i = 0; i < filter_inst->order; i++ )
+			for ( uint32_t i = 0U; i < filter_inst->order; i++ )
 			{
 				// Get buffer value
 				ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val,  (( -i ) - 1U ));
