@@ -52,8 +52,10 @@ _Static_assert( 2 == RING_BUFFER_VER_MAJOR );
 
 /**
  *  Two times PI
+ *
+ * @note    M_PI should be defined in <math.h> lib!
  */
-#define M_TWOPI            ((float32_t) ( 2.0 * M_PI ))
+#define FILTER_TWOPI            ((float32_t) ( 2.0 * M_PI ))
 
 /**
  * 	RC Filter data
@@ -268,7 +270,7 @@ static filter_status_t filter_rc_calculate_alpha(const float32_t fc, const float
 	if 	(	( fc < ( fs / 2.0f ))
 		&& 	( p_alpha != NULL ))
 	{
-		*p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( M_TWOPI * fc ))));
+		*p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( FILTER_TWOPI * fc ))));
 	}
 	else
 	{
@@ -498,7 +500,7 @@ static filter_status_t filter_cr_calculate_alpha(const float32_t fc, const float
 		&& ( fc > 0.0f )
 		&& ( p_alpha != NULL ))
 	{
-		*p_alpha = (float32_t) (( 1.0f / ( M_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( M_TWOPI * fc ))));
+		*p_alpha = (float32_t) (( 1.0f / ( FILTER_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( FILTER_TWOPI * fc ))));
 	}
 
 	return status;
