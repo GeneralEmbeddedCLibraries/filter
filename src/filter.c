@@ -1385,6 +1385,10 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
         // Allocation succeed
         if ( NULL != *p_filter_inst )
         {
+            // Init buffer pointers
+            (*p_filter_inst)->p_x = NULL;
+            (*p_filter_inst)->p_y = NULL;
+
             // Create ring buffers
             buf_status  = ring_buffer_init( &(*p_filter_inst)->p_x, p_coeff->num_of_zero, &buf_attr );
             buf_status |= ring_buffer_init( &(*p_filter_inst)->p_y, p_coeff->num_of_pole, &buf_attr );
