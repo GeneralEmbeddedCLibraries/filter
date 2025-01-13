@@ -248,8 +248,8 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
     {
         // Allocate space
         *p_filter_inst          = malloc( sizeof(filter_rc_t));
-        (*p_filter_inst)->p_y   = malloc( order * sizeof(float32_t));
         memset( *p_filter_inst, 0U, sizeof(filter_rc_t));
+        (*p_filter_inst)->p_y   = malloc( order * sizeof(float32_t));
         memset((*p_filter_inst)->p_y, 0U, sizeof(order * sizeof(float32_t)));
 
         // Check if allocation succeed
@@ -532,10 +532,10 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
     {
         // Allocate space
         *p_filter_inst          = malloc( sizeof(filter_cr_t));
-        (*p_filter_inst)->p_y   = malloc( order * sizeof(float32_t));
-        (*p_filter_inst)->p_x   = malloc( order * sizeof(float32_t));
         memset( *p_filter_inst, 0U, sizeof(filter_cr_t));
+        (*p_filter_inst)->p_y   = malloc( order * sizeof(float32_t));
         memset((*p_filter_inst)->p_y, 0U, ( order * sizeof(float32_t)));
+        (*p_filter_inst)->p_x   = malloc( order * sizeof(float32_t));        
         memset((*p_filter_inst)->p_x, 0U, ( order * sizeof(float32_t)));
 
         // Check if allocation succeed
@@ -1404,8 +1404,8 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
 
             // Allocate space for filter coefficients
             (*p_filter_inst)->coeff.p_pole = malloc( p_coeff->num_of_pole * sizeof(float32_t));
-            (*p_filter_inst)->coeff.p_zero = malloc( p_coeff->num_of_zero * sizeof(float32_t));
             memset((*p_filter_inst)->coeff.p_pole, 0U, ( p_coeff->num_of_pole * sizeof(float32_t)));
+            (*p_filter_inst)->coeff.p_zero = malloc( p_coeff->num_of_zero * sizeof(float32_t));
             memset((*p_filter_inst)->coeff.p_zero, 0U, ( p_coeff->num_of_zero * sizeof(float32_t)));
 
             // Check if ring buffer created
