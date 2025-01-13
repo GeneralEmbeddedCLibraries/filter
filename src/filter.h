@@ -130,7 +130,7 @@ filter_status_t filter_fir_coeff_get    (p_filter_fir_t filter_inst, float32_t *
 filter_status_t filter_iir_init         (p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff);
 filter_status_t filter_iir_is_init      (p_filter_iir_t filter_inst, bool * const p_is_init);
 filter_status_t filter_iir_hndl         (p_filter_iir_t filter_inst, const float32_t in, float32_t * const p_out);
-filter_status_t filter_iir_reset        (p_filter_iir_t filter_inst);
+filter_status_t filter_iir_reset        (p_filter_iir_t filter_inst, const float32_t rst_val);
 filter_status_t filter_iir_coeff_set    (p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff);
 filter_status_t filter_iir_coeff_get    (p_filter_iir_t filter_inst, filter_iir_coeff_t ** const pp_coeff);
 

@@ -1546,7 +1546,7 @@ filter_status_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in, 
 * @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_iir_reset(p_filter_iir_t filter_inst)
+filter_status_t filter_iir_reset(p_filter_iir_t filter_inst, const float32_t rst_val)
 {
     filter_status_t status  = eFILTER_OK;
 
@@ -1556,8 +1556,8 @@ filter_status_t filter_iir_reset(p_filter_iir_t filter_inst)
         if ( true == filter_inst->is_init )
         {
             // Fill buffers with zero
-            filter_buf_fill( filter_inst->p_x, 0.0f );
-            filter_buf_fill( filter_inst->p_y, 0.0f );
+            filter_buf_fill( filter_inst->p_x, rst_val );
+            filter_buf_fill( filter_inst->p_y, rst_val );
         }
         else
         {
