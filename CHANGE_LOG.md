@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project/module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
+## V2.0.1 - xx.xx.2025
+
+### Fixed
+ - Clearing dynamically allocated memory
+
+---
 ## V2.0.0 - 26.10.2023
 
 ### Notice
