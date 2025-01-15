@@ -1391,6 +1391,8 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
         *p_filter_inst = malloc( sizeof(filter_iir_t));
         memset( *p_filter_inst, 0U, sizeof(filter_iir_t));
 
+        // TODO: Use calloc instead of malloc and memset!
+
         // Allocation succeed
         if ( NULL != *p_filter_inst )
         {
