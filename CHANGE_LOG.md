@@ -8,7 +8,7 @@ and this project/module adheres to [Semantic Versioning](https://semver.org/spec
 ## V2.0.1 - xx.xx.2025
 
 ### Fixed
- - Clearing dynamically allocated memory
+ - Clearing dynamically allocated memory by using *calloc* instead of *malloc*
 
 ---
 ## V2.0.0 - 26.10.2023
