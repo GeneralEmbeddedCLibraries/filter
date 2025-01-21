@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Ziga Miklosic
+// Copyright (c) 2025 Ziga Miklosic
 // All Rights Reserved
 // This software is under MIT licence (https://opensource.org/licenses/MIT)
 ////////////////////////////////////////////////////////////////////////////////
@@ -6,8 +6,8 @@
 *@file      filter.h
 *@brief     Various filter designs
 *@author    Ziga Miklosic
-*@date      26.10.2023
-*@version   V2.0.0
+*@date      21.01.2025
+*@version   V2.1.0
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -34,7 +34,7 @@
  *     Module version
  */
 #define FILTER_VER_MAJOR        ( 2 )
-#define FILTER_VER_MINOR        ( 0 )
+#define FILTER_VER_MINOR        ( 1 )
 #define FILTER_VER_DEVELOP      ( 0 )
 
 /**
@@ -130,7 +130,7 @@ filter_status_t filter_fir_coeff_get    (p_filter_fir_t filter_inst, float32_t *
 filter_status_t filter_iir_init         (p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff);
 filter_status_t filter_iir_is_init      (p_filter_iir_t filter_inst, bool * const p_is_init);
 filter_status_t filter_iir_hndl         (p_filter_iir_t filter_inst, const float32_t in, float32_t * const p_out);
-filter_status_t filter_iir_reset        (p_filter_iir_t filter_inst);
+filter_status_t filter_iir_reset        (p_filter_iir_t filter_inst, const float32_t rst_val);
 filter_status_t filter_iir_coeff_set    (p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff);
 filter_status_t filter_iir_coeff_get    (p_filter_iir_t filter_inst, filter_iir_coeff_t ** const pp_coeff);
 
