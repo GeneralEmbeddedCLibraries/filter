@@ -5,7 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project/module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
-## V2.0.1 - xx.xx.2025
+## V2.1.0 - 21.01.2025
+
+### Added 
+ - Added reset value to IIR reset API function
 
 ### Fixed
  - Clearing dynamically allocated memory by using *calloc* instead of *malloc*
