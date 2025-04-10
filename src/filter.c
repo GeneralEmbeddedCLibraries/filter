@@ -1213,7 +1213,7 @@ filter_status_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in, 
             for ( uint32_t i = 0U; i < filter_inst->order; i++ )
             {
                 // Get buffer value
-                ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val,  (( -i ) - 1U ));
+                ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val,  (int32_t)(( -i ) - 1U ));
 
                 // Calculate convolution
                 *p_out += ( filter_inst->p_a[i] * buf_val );
@@ -1493,7 +1493,7 @@ filter_status_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in, 
             for ( uint32_t i = 0; i < filter_inst->coeff.num_of_zero; i++ )
             {
                 // Get sample
-                ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val, (( -i ) - 1 ));
+                ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val, (int32_t)(( -i ) - 1 ));
 
                 // Sum zeros
                 *p_out += ( filter_inst->coeff.p_zero[i] * buf_val );
@@ -1502,7 +1502,7 @@ filter_status_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in, 
             for ( uint32_t i = 1; i < filter_inst->coeff.num_of_pole; i++ )
             {
                 // Get sample
-                ring_buffer_get_by_index( filter_inst->p_y, (float32_t*) &buf_val, -i );
+                ring_buffer_get_by_index( filter_inst->p_y, (float32_t*) &buf_val, (int32_t)-i );
 
                 // Subtract sum of poles
                 *p_out -= ( filter_inst->coeff.p_pole[i] * buf_val );
@@ -1667,7 +1667,7 @@ filter_status_t filter_iir_coeff_calc_2nd_lpf(const float32_t fc, const float32_
         // Check Nyquist/Shannon sampling theorem
         if ( fc < ( fs / 2.0f ))
         {
-            omega = ( 2.0f * ( M_PI * ( fc / fs )));
+            omega = ( 2.0f * ( (float32_t)M_PI * ( fc / fs )));
             alpha = ( sinf( omega ) * zeta );
             cos_omega = cosf( omega );
 
@@ -1721,7 +1721,7 @@ filter_status_t filter_iir_coeff_calc_2nd_hpf(const float32_t fc, const float32_
         // Check Nyquist/Shannon sampling theorem
         if ( fc < ( fs / 2.0f ))
         {
-            omega = ( 2.0f * ( M_PI * ( fc / fs )));
+            omega = ( 2.0f * ( (float32_t)M_PI * ( fc / fs )));
             alpha = ( sinf( omega ) * zeta );
             cos_omega = cosf( omega );
 
@@ -1778,7 +1778,7 @@ filter_status_t filter_iir_coeff_calc_2nd_bpf(const float32_t fc, const float32_
         // Check Nyquist/Shannon sampling theorem
         if ( fc < ( fs / 2.0f ))
         {
-            omega = ( 2.0f * ( M_PI * ( fc / fs )));
+            omega = ( 2.0f * ( (float32_t)M_PI * ( fc / fs )));
             cos_omega = cosf( omega );
 
             // Calculate zeros & poles
