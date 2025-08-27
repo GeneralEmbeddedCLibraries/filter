@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project/module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
+## V2.2.0 - xx.xx.2025
+
+### Added
+ - Added static initialization to RC filter
+
+### Changed
+ - Two pi definition replace with one from utils
+
+### Fixed
+ - Resolved compiler warnings
+
+---
 ## V2.1.0 - 21.01.2025
 
 ### Added 
