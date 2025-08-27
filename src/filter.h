@@ -26,6 +26,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// Common goods
+#include "common/utils/src/utils.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +52,16 @@ typedef enum
 /**
  *     RC filter instance type
  */
-typedef struct filter_rc_s * p_filter_rc_t;
+typedef struct
+{
+    float32_t * p_y;        /**<Output of filter + previous values */
+    float32_t   alpha;      /**<Filter smoothing factor */
+    float32_t   fc;         /**<Filter cutoff frequency */
+    float32_t   fs;         /**<Filter sampling frequency */
+    uint8_t     order;      /**<Filter order - number of cascaded filter */
+    bool        is_init;    /**<Filter instance initialization success flag */
+} filter_rc_t;
+typedef filter_rc_t * p_filter_rc_t;
 
 /**
  *     CR filter instance type
@@ -93,6 +105,7 @@ typedef struct
 
 // RC filter API
 filter_status_t filter_rc_init          (p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value);
+filter_status_t filter_rc_init_static   (p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value);
 filter_status_t filter_rc_is_init       (p_filter_rc_t filter_inst, bool * const p_is_init);
 filter_status_t filter_rc_hndl          (p_filter_rc_t filter_inst, const float32_t in, float32_t * const p_out);
 filter_status_t filter_rc_reset         (p_filter_rc_t filter_inst, const float32_t rst_value);

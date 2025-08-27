@@ -50,26 +50,6 @@ _Static_assert( 2 == RING_BUFFER_VER_MAJOR );
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- *  Two times PI
- *
- * @note    M_PI should be defined in <math.h> lib!
- */
-#define FILTER_TWOPI        ((float32_t) ( 2.0 * M_PI ))
-
-/**
- *     RC Filter data
- */
-typedef struct filter_rc_s
-{
-    float32_t * p_y;        /**<Output of filter + previous values */
-    float32_t   alpha;      /**<Filter smoothing factor */
-    float32_t   fc;         /**<Filter cutoff frequency */
-    float32_t   fs;         /**<Filter sampling frequency */
-    uint8_t     order;      /**<Filter order - number of cascaded filter */
-    bool        is_init;    /**<Filter instance initialization success flag */
-} filter_rc_t;
-
-/**
  *     CR Filter data
  */
 typedef struct filter_cr_s
@@ -149,7 +129,7 @@ static filter_status_t filter_rc_calculate_alpha(const float32_t fc, const float
     if  (   ( fc < ( fs / 2.0f ))
         &&  ( p_alpha != NULL ))
     {
-        *p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( FILTER_TWOPI * fc ))));
+        *p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( UTILS_TWOPI * fc ))));
     }
     else
     {
@@ -179,7 +159,7 @@ static filter_status_t filter_cr_calculate_alpha(const float32_t fc, const float
         &&  ( fc > 0.0f )
         &&  ( p_alpha != NULL ))
     {
-        *p_alpha = (float32_t) (( 1.0f / ( FILTER_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( FILTER_TWOPI * fc ))));
+        *p_alpha = (float32_t) (( 1.0f / ( UTILS_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( UTILS_TWOPI * fc ))));
     }
 
     return status;
@@ -255,9 +235,7 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
             &&  ( NULL != (*p_filter_inst)->p_y ))
         {
             // Calculate coefficient
-            status = filter_rc_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha );
-
-            if ( eFILTER_OK == status )
+            if ( eFILTER_OK == filter_rc_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha ))
             {
                 // Store order & fc
                 (*p_filter_inst)->order = order;
@@ -265,13 +243,64 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
                 (*p_filter_inst)->fs = fs;
 
                 // Initial value
-                for ( uint32_t i = 0; i < order; i++)
-                {
-                    (*p_filter_inst)->p_y[i] = init_value;
-                }
+                memset( &(*p_filter_inst)->p_y, init_value, order );
 
                 // Init success
                 (*p_filter_inst)->is_init = true;
+            }
+        }
+        else
+        {
+            status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   Initialize statically RC filter
+*
+* @note Order of RC filter is represented as number of cascaded RC
+*        analog equivalent circuits!
+*
+* @note Fs and order cannot be change later!
+*
+* @param[in]    filter_inst - Pointer to RC filter instance
+* @param[in]    fc          - Filter cutoff frequency
+* @param[in]    fs          - Sample frequency
+* @param[in]    order       - Order of filter (number of cascaded filter)
+* @param[in]    init_value  - Initial value
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_rc_init_static(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if ( NULL != filter_inst )
+    {
+        // Check filter memory is allocated
+        if ( NULL != filter_inst->p_y )
+        {
+            // Calculate coefficient
+            if ( eFILTER_OK == filter_rc_calculate_alpha( fc, fs, &filter_inst->alpha ))
+            {
+                // Store order & fc
+                filter_inst->order = order;
+                filter_inst->fc = fc;
+                filter_inst->fs = fs;
+
+                // Initial value
+                memset( &filter_inst->p_y, init_value, order );
+
+                // Init success
+                filter_inst->is_init = true;
             }
         }
         else
