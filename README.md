@@ -18,6 +18,12 @@ It is mandatory to be under following path in order to be compatible "General Em
 root/middleware/ring_buffer/src/ring_buffer.h
 ```
 
+### **2. Utils Module**
+[Utils](https://github.com/GeneralEmbeddedCLibraries/utils) module must take following path:
+```
+"root/common/utils/src/utils.h"
+```
+
 ## **General Embedded C Libraries Ecosystem**
 In order to be part of *General Embedded C Libraries Ecosystem* this module must be placed in following path: 
 ```
@@ -36,6 +42,7 @@ root/middleware/filter/"module_space"
 | API Functions | Description | Prototype |
 | --- | ----------- | ----- |
 | **filter_rc_init**        | Initialization of RC filter           | filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value) |
+| **filter_rc_init_static** | Static initialization of RC filter    | filter_status_t filter_rc_init_static(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value) |
 | **filter_rc_is_init**     | Get RC filter initialization state    | filter_status_t filter_rc_is_init(p_filter_rc_t filter_inst, bool * const p_is_init) |
 | **filter_rc_hndl**        | Handle RC filter                      | filter_status_t filter_rc_hndl(p_filter_rc_t filter_inst, const float32_t in, float32_t * const p_out) |
 | **filter_rc_reset**       | Reset RC filter                       | filter_status_t filter_rc_reset(p_filter_rc_t filter_inst, const float32_t rst_value) |
@@ -48,6 +55,7 @@ root/middleware/filter/"module_space"
 | API Functions | Description | Prototype |
 | --- | ----------- | ----- |
 | **filter_cr_init**        | Initialization of RC filter           | filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order) |
+| **filter_cr_init_static** | Static initialization of RC filter    | filter_status_t filter_cr_init_static(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order) |
 | **filter_cr_is_init**     | Get CR filter initialization state    | filter_status_t filter_cr_is_init(p_filter_cr_t filter_inst, bool * const p_is_init) |
 | **filter_cr_hndl**        | Handle CR filter                      | filter_status_t filter_cr_hndl(p_filter_cr_t filter_inst, const float32_t in, float32_t * const p_out) |
 | **filter_cr_reset**       | Reset CR filter                       | filter_status_t filter_cr_reset(p_filter_cr_t filter_inst, const float32_t rst_value) |
@@ -60,6 +68,7 @@ root/middleware/filter/"module_space"
 | API Functions | Description | Prototype |
 | --- | ----------- | ----- |
 | **filter_bool_init**        | Initialization of RC filter           | filter_status_t filter_bool_init(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t comp_lvl) |
+| **filter_bool_init_static** | Static initialization of RC filter     | filter_status_t filter_bool_init_static(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t comp_lvl) |
 | **filter_bool_is_init**     | Get Boolean filter initialization state    | filter_status_t filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_is_init) |
 | **filter_bool_hndl**        | Handle Boolean filter                      | filter_status_t filter_bool_hndl(p_filter_bool_t filter_inst, const float32_t in, float32_t * const p_out) |
 | **filter_bool_reset**       | Reset Boolean filter                       | filter_status_t filter_bool_reset(p_filter_bool_t filter_inst, const float32_t rst_value) |
@@ -73,6 +82,7 @@ root/middleware/filter/"module_space"
 | API Functions | Description | Prototype |
 | --- | ----------- | ----- |
 | **filter_fir_init**       | Initialization of FIR filter          | filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order) |
+| **filter_fir_init_static** | Static initialization of FIR filter  | filter_status_t filter_fir_init_static(p_filter_fir_t filter_inst, const float32_t * p_a, const uint32_t order) |
 | **filter_fir_is_init**    | Get FIR filter initialization state   | filter_status_t filter_fir_is_init(p_filter_fir_t filter_inst, bool * const p_is_init) |
 | **filter_fir_hndl**       | Handle FIR filter                     | filter_status_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in, float32_t * const p_out) |
 | **filter_fir_reset**      | Reset FIR filter                      | filter_status_t filter_fir_reset(p_filter_fir_t filter_inst, const float32_t rst_val) |
@@ -84,6 +94,7 @@ root/middleware/filter/"module_space"
 | API Functions | Description | Prototype |
 | --- | ----------- | ----- |
 | **filter_iir_init**       | Initialization of IIR filter                  | filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff) |
+| **filter_iir_init_static** | Static initialization of IIR filter          | filter_status_t filter_iir_init_static(p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff) |
 | **filter_iir_is_init**    | Get IIR filter initialization state           | filter_status_t filter_iir_is_init(p_filter_iir_t filter_inst, bool * const p_is_init) |
 | **filter_iir_hndl**       | Handle IIR filter                             | filter_status_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in, float32_t * const p_out) |
 | **filter_iir_reset**      | Reset IIR filter                              | filter_status_t filter_iir_reset(p_filter_iir_t filter_inst, const float32_t rst_val) |
@@ -107,6 +118,10 @@ root/middleware/filter/"module_space"
  RC/CR filter C implementation support also cascading filter but user shall notice that cascading two RC or CR filters does not have same characteristics as IIR 2nd order filter. To define 2nd order IIR filter beside cutoff frequency (fc) also damping factors ($\zeta$) must be defined.
 
 ```C
+// ===================================================
+// DYNAMIC FILTER MEMORY ALLOCATION
+// ===================================================
+
 // 1. Declare filter instance
 p_filter_rc_t my_filter_inst = NULL;
 
@@ -130,6 +145,37 @@ loop @SAMPLE_TIME
     (void) filter_rc_hndl( my_filter_inst, raw_signal, &filtered_signal );
 }
 
+
+// ===================================================
+// STATIC FILTER MEMORY ALLOCATION
+// ===================================================
+
+// 1. Declare filter instance and memory statically
+filter_rc_t my_filter_inst = {0};
+float32_t filter_mem[ORDER];
+
+// 2. Assign filter instance allocated memory
+my_filter_inst.p_y = &filter_mem;
+
+/* 
+*   3. Init RC filter with following parameters:
+*   - fc = 10Hz
+*   - fs = 100Hz
+*   - order = ORDER
+*   - inititial value = 0
+*/ 
+if ( eFILTER_OK != filter_rc_init_static( &my_filter_instance, 10.0f, 100.0f, ORDER, 0 ))
+{
+    // Filter init failed
+    // Further actions here...
+}
+
+// 4. Apply filter in period of SAMPLE_TIME
+loop @SAMPLE_TIME
+{
+    // Update filter
+    (void) filter_rc_hndl( &my_filter_inst, raw_signal, &filtered_signal );
+}
 ```
 
  ## **IIR filters**

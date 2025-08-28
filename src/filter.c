@@ -271,7 +271,7 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
 *
 * @note Fs and order cannot be change later!
 *
-* @param[in]    filter_inst - Pointer to RC filter instance
+* @param[in]    filter_inst - RC filter instance
 * @param[in]    fc          - Filter cutoff frequency
 * @param[in]    fs          - Sample frequency
 * @param[in]    order       - Order of filter (number of cascaded filter)
