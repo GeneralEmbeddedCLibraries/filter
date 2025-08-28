@@ -50,20 +50,6 @@ _Static_assert( 2 == RING_BUFFER_VER_MAJOR );
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- *     CR Filter data
- */
-typedef struct filter_cr_s
-{
-    float32_t * p_y;        /**<Output of filter + previous values */
-    float32_t * p_x;        /**<Input of filter + previous values */
-    float32_t   alpha;      /**<Filter smoothing factor */
-    float32_t   fc;         /**<Filter cutoff frequency */
-    float32_t   fs;         /**<Filter sampling frequency */
-    uint8_t     order;      /**<Filter order - number of cascaded filter */
-    bool        is_init;    /**<Filter instance initialization success flag */
-} filter_cr_t;
-
-/**
  *     FIR Filter data
  */
 typedef struct filter_fir_s
@@ -84,17 +70,6 @@ typedef struct filter_iir_s
     filter_iir_coeff_t  coeff;          /**<Filter coefficients */
     bool                is_init;        /**<Filter instance initialization success flag */
 } filter_iir_t;
-
-/**
- *     Boolean Filter data
- */
-typedef struct filter_bool_s
-{
-    p_filter_rc_t   lpf;        /**<Low pass filter */
-    float32_t       comp_lvl;   /**<Comparator trip level - symmetrical on 0.5 */
-    bool            y;          /**<Output value of comparator/filter */
-    bool            is_init;    /**<Filter instance initialization success flag */
-} filter_bool_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Variables
@@ -224,7 +199,7 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
 {
     filter_status_t status = eFILTER_OK;
 
-    if (( NULL != p_filter_inst ) && ( order > 0UL ))
+    if ( NULL != p_filter_inst )
     {
         // Allocate space
         *p_filter_inst          = calloc( 1U, sizeof(filter_rc_t));
@@ -283,29 +258,21 @@ filter_status_t filter_rc_init_static(p_filter_rc_t filter_inst, const float32_t
 {
     filter_status_t status = eFILTER_OK;
 
-    if ( NULL != filter_inst )
+    if (( NULL != filter_inst ) && ( NULL != filter_inst->p_y ))
     {
-        // Check filter memory is allocated
-        if ( NULL != filter_inst->p_y )
+        // Calculate coefficient
+        if ( eFILTER_OK == filter_rc_calculate_alpha( fc, fs, &filter_inst->alpha ))
         {
-            // Calculate coefficient
-            if ( eFILTER_OK == filter_rc_calculate_alpha( fc, fs, &filter_inst->alpha ))
-            {
-                // Store order & fc
-                filter_inst->order = order;
-                filter_inst->fc = fc;
-                filter_inst->fs = fs;
+            // Store order & fc
+            filter_inst->order = order;
+            filter_inst->fc = fc;
+            filter_inst->fs = fs;
 
-                // Initial value
-                memset( &filter_inst->p_y, init_value, order );
+            // Initial value
+            memset( &filter_inst->p_y, init_value, order );
 
-                // Init success
-                filter_inst->is_init = true;
-            }
-        }
-        else
-        {
-            status = eFILTER_ERROR;
+            // Init success
+            filter_inst->is_init = true;
         }
     }
     else
@@ -539,8 +506,8 @@ filter_status_t filter_rc_fs_get(p_filter_rc_t filter_inst, float32_t * const p_
 /**
 *   Initialize CR filter
 *
-* @note    Order of CR filter is represented as number of cascaded CR
-*        analog equivalent circuits!
+* @note Order of CR filter is represented as number of cascaded CR
+*       analog equivalent circuits!
 *
 * @note Fs and order cannot be change later!
 *
@@ -555,7 +522,7 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
 {
     filter_status_t status = eFILTER_OK;
 
-    if (( NULL != p_filter_inst ) && ( order > 0UL ))
+    if ( NULL != p_filter_inst )
     {
         // Allocate space
         *p_filter_inst          = calloc( 1U, sizeof(filter_cr_t));
@@ -568,20 +535,15 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
             &&  ( NULL != (*p_filter_inst)->p_x ))
         {
             // Calculate coefficient
-            status = filter_cr_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha );
-
-            if ( eFILTER_OK == status )
+            if ( eFILTER_OK == filter_cr_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha ))
             {
                 // Store order & fc
                 (*p_filter_inst)->order = order;
                 (*p_filter_inst)->fc = fc;
 
                 // Initial value
-                for ( uint32_t i = 0; i < order; i++)
-                {
-                    (*p_filter_inst)->p_y[i] = 0.0f;
-                    (*p_filter_inst)->p_x[i] = 0.0f;
-                }
+                memset( &(*p_filter_inst)->p_y, 0.0f, order );
+                memset( &(*p_filter_inst)->p_x, 0.0f, order );
 
                 // Init success
                 (*p_filter_inst)->is_init = true;
@@ -590,6 +552,51 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
         else
         {
             status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   Initialize statically CR filter
+*
+* @note    Order of CR filter is represented as number of cascaded CR
+*        analog equivalent circuits!
+*
+* @note Fs and order cannot be change later!
+*
+* @param[in]    filter_inst - CR filter instance
+* @param[in]    fc          - Filter cutoff frequency
+* @param[in]    fs          - Sample frequency
+* @param[in]    order       - Order of filter (number of cascaded filter)
+* @return       status      - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_cr_init_static(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if (( NULL != filter_inst ) && ( NULL != filter_inst->p_y ) && ( NULL != filter_inst->p_x ))
+    {
+        // Calculate coefficient
+        if ( eFILTER_OK == filter_cr_calculate_alpha( fc, fs, &filter_inst->alpha ))
+        {
+            // Store order & fc
+            filter_inst->order = order;
+            filter_inst->fc = fc;
+
+            // Initial value
+            memset( &filter_inst->p_y, 0.0f, order );
+            memset( &filter_inst->p_x, 0.0f, order );
+
+            // Init success
+            filter_inst->is_init = true;
         }
     }
     else
@@ -856,7 +863,8 @@ filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_
             &&  (( comp_lvl > 0.0f ) && ( comp_lvl < 0.4f )))
         {
             // Init LPF
-            status = filter_rc_init( &(*p_filter_inst)->lpf, fc, fs, 1U, 0.0f );
+            (*p_filter_inst)->lpf.p_y = &((*p_filter_inst)->lpf_mem);
+            status = filter_rc_init_static( &(*p_filter_inst)->lpf, fc, fs, 1U, 0.0f );
 
             if ( eFILTER_OK == status )
             {
@@ -870,6 +878,58 @@ filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_
         else
         {
             status = eFILTER_ERROR;
+        }
+    }
+    else
+    {
+        status = eFILTER_ERROR;
+    }
+
+    return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   Initialize statically boolean/debounce filter
+*
+* @brief    Boolean filter is basically LPF (RC filter) + comparator
+*           at the end of signal path.
+*
+*           Input to filter in bool and output of filer is bool. Signal
+*           in between is being converted to float either 0.0f or 1.0f. That
+*           signal then goes to LPF. Output of LPF goes to schmitt trigger
+*           comparator with configurable trip levels at init phase
+*
+*           Input "comp_lvl" setup comparator trip level symmetrical to 0.5
+*           value. E.g.: comp_lvl = 0.1 will result in levels:
+*
+*               OFF -> ON:  level = 0.9
+*               ON  -> OFF: level = 0.1
+*
+* @param[in]    filter_inst - Bool filter instance
+* @param[in]    fc          - Cuttoff frequency of LPF
+* @param[in]    fs          - Sample time of filter
+* @param[in]    comp_lvl    - Comparator trip level
+* @return       status      - Status of initialization
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_bool_init_static(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)
+{
+    filter_status_t status = eFILTER_OK;
+
+    if (( NULL != filter_inst ) &&  (( comp_lvl > 0.0f ) && ( comp_lvl < 0.4f )))
+    {
+        // Assign LPF memory
+        filter_inst->lpf.p_y = &filter_inst->lpf_mem;
+
+        // Init LPF
+        if ( eFILTER_OK == filter_rc_init_static( &filter_inst->lpf, fc, fs, 1U, 0.0f ))
+        {
+            filter_inst->comp_lvl  = comp_lvl;
+            filter_inst->y = false;
+
+            // Init succeed
+            filter_inst->is_init = true;
         }
     }
     else
@@ -931,7 +991,7 @@ filter_status_t filter_bool_hndl(p_filter_bool_t filter_inst, const bool in, boo
         filt_in = (float32_t) in;
 
         // Apply filter
-        (void) filter_rc_hndl( filter_inst->lpf, filt_in, &filt_out );
+        (void) filter_rc_hndl( &filter_inst->lpf, filt_in, &filt_out );
 
         // Apply comparator
         if  (   ( false == filter_inst->y )
@@ -979,7 +1039,7 @@ filter_status_t filter_bool_reset(p_filter_bool_t filter_inst)
         if ( true == filter_inst->is_init )
         {
             // Reset LPF
-            (void) filter_rc_reset( filter_inst->lpf, 0.0f );
+            (void) filter_rc_reset( &filter_inst->lpf, 0.0f );
             filter_inst->y = false;
         }
         else
@@ -1014,7 +1074,7 @@ filter_status_t filter_boot_fc_set(p_filter_bool_t filter_inst, const float32_t 
         if ( true == filter_inst->is_init )
         {
             // Set LPF fc
-            status = filter_rc_fc_set( filter_inst->lpf, fc );
+            status = filter_rc_fc_set( &filter_inst->lpf, fc );
         }
         else
         {
@@ -1048,7 +1108,7 @@ filter_status_t filter_bool_fc_get(p_filter_bool_t filter_inst, float32_t * cons
         // Is instance init?
         if ( true == filter_inst->is_init )
         {
-            (void) filter_rc_fc_get( filter_inst->lpf, p_fc );
+            (void) filter_rc_fc_get( &filter_inst->lpf, p_fc );
         }
         else
         {
@@ -1082,7 +1142,7 @@ filter_status_t filter_bool_fs_get(p_filter_bool_t filter_inst, float32_t * cons
         // Is instance init?
         if ( true == filter_inst->is_init )
         {
-            (void) filter_rc_fs_get( filter_inst->lpf, p_fs );
+            (void) filter_rc_fs_get( &filter_inst->lpf, p_fs );
         }
         else
         {
@@ -1102,7 +1162,6 @@ filter_status_t filter_bool_fs_get(p_filter_bool_t filter_inst, float32_t * cons
 *   Initialize FIR filter
 *
 * @note     Filter order cannot be changed later!
-*
 *
 * @param[in]    p_filter_inst   - Pointer to FIR filter instance
 * @param[in]    p_a             - FIR coefficients

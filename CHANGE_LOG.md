@@ -16,6 +16,9 @@ and this project/module adheres to [Semantic Versioning](https://semver.org/spec
 ### Fixed
  - Resolved compiler warnings
 
+### Todo
+ - Adopt API to ress restrictive, return actual value not statuses... ---> THIS WILL INCREASE A MAJOR VERSION NUMBER!!!
+
 ---
 ## V2.1.0 - 21.01.2025
 
