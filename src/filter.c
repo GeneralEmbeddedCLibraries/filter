@@ -151,13 +151,8 @@ static filter_status_t filter_cr_calculate_alpha(const float32_t fc, const float
 ////////////////////////////////////////////////////////////////////////////////
 static void filter_buf_fill(const p_ring_buffer_t buf_inst, const float32_t val)
 {
-    uint32_t size_of_buf = 0U;
-
-    // Get buffer size
-    (void) ring_buffer_get_size( buf_inst, &size_of_buf );
-
     // Fill with wanted value
-    for ( uint32_t i = 0; i < size_of_buf; i++ )
+    for ( uint32_t i = 0; i < ring_buffer_get_size( buf_inst ); i++ )
     {
         (void) ring_buffer_add( buf_inst, (float32_t*) &val );
     }
