@@ -41,9 +41,9 @@
 /**
  *     Compatibility check with RING_BUFFER
  *
- *     Support version V2.x.x
+ *     Support version V3.x.x
  */
-_Static_assert( 2 == RING_BUFFER_VER_MAJOR );
+_Static_assert( 3 == RING_BUFFER_VER_MAJOR );
 
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
