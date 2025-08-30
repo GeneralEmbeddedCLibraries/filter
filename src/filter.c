@@ -374,7 +374,7 @@ filter_status_t filter_rc_set_fc(p_filter_rc_t filter_inst, const float32_t fc)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_rc_get_fc(p_filter_rc_t filter_inst)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init ))
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init ))
     {
         return 0;
     }
@@ -394,7 +394,7 @@ float32_t filter_rc_get_fc(p_filter_rc_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_rc_get_fs(p_filter_rc_t filter_inst)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init ))
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init ))
     {
         return 0;
     }
@@ -634,7 +634,7 @@ filter_status_t filter_cr_set_fc(p_filter_cr_t filter_inst, const float32_t fc)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_cr_get_fc(p_filter_cr_t filter_inst)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init ))
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init ))
     {
         return 0;
     }
@@ -654,7 +654,7 @@ float32_t filter_cr_get_fc(p_filter_cr_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_cr_get_fs(p_filter_cr_t filter_inst)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init ))
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init ))
     {
         return 0;
     }
@@ -721,6 +721,7 @@ filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_
     else
     {
         free(*p_filter_inst);
+        *p_filter_inst = NULL;
         return eFILTER_ERROR_INIT;
     }
 }
@@ -837,7 +838,6 @@ bool filter_bool_hndl(p_filter_bool_t filter_inst, const bool in)
 *       Reset Boolean filter buffers
 *
 * @param[in]    filter_inst - Boolean filter instance
-* @param[in]    rst_value   - Reset value
 * @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
@@ -861,6 +861,9 @@ filter_status_t filter_bool_reset(p_filter_bool_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_bool_set_fc(p_filter_bool_t filter_inst, const float32_t fc)
 {
+    if ( NULL == filter_inst )              return eFILTER_ERROR_INST;
+    if ( false == filter_inst->is_init )    return eFILTER_ERROR_INIT;
+
     return filter_rc_set_fc( &filter_inst->lpf, fc );
 }
 
@@ -874,6 +877,9 @@ filter_status_t filter_bool_set_fc(p_filter_bool_t filter_inst, const float32_t 
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_bool_get_fc(p_filter_bool_t filter_inst)
 {
+    if ( NULL == filter_inst )              return eFILTER_ERROR_INST;
+    if ( false == filter_inst->is_init )    return eFILTER_ERROR_INIT;
+
     return filter_rc_get_fc( &filter_inst->lpf );
 }
 
@@ -887,6 +893,9 @@ float32_t filter_bool_get_fc(p_filter_bool_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_bool_get_fs(p_filter_bool_t filter_inst)
 {
+    if ( NULL == filter_inst )              return eFILTER_ERROR_INST;
+    if ( false == filter_inst->is_init )    return eFILTER_ERROR_INIT;
+
     return filter_rc_get_fs( &filter_inst->lpf );
 }
 
@@ -963,9 +972,9 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
     }
     else
     {
-        free(*p_filter_inst);
         free((*p_filter_inst)->p_a);
         free(buf_attr.p_mem);
+        free(*p_filter_inst);
         *p_filter_inst = NULL;
         return eFILTER_ERROR_INIT;
     }
@@ -1149,7 +1158,7 @@ filter_status_t filter_fir_set_coeff(p_filter_fir_t filter_inst, const float32_t
 /**
 *       Get FIR filter cutoff frequency
 *
-* @param[in]    filter_inst - RC filter instance
+* @param[in]    filter_inst - FIR filter instance
 * @return       FIR coefficients
 */
 ////////////////////////////////////////////////////////////////////////////////
@@ -1221,6 +1230,8 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
     // Check allocation
     if (( NULL == (*p_filter_inst)->coeff.p_pole  ) || ( NULL == (*p_filter_inst)->coeff.p_zero  ))
     {
+        free((*p_filter_inst)->coeff.p_pole);
+        free((*p_filter_inst)->coeff.p_zero);
         free(*p_filter_inst);
         *p_filter_inst = NULL;
         return eFILTER_ERROR_MEM;
@@ -1530,7 +1541,7 @@ filter_status_t filter_iir_coeff_calc_2nd_lpf(const float32_t fc, const float32_
         &&  ( NULL != p_zero ))
     {
         // Check Nyquist/Shannon sampling theorem
-        if ( fc < ( fs / 2.0f ))
+        if (( fc < ( fs / 2.0f )) && ( fc > 0.0f ) && ( fs > 0.0f ))
         {
             omega = ( 2.0f * ( (float32_t)M_PI * ( fc / fs )));
             alpha = ( sinf( omega ) * zeta );
@@ -1584,7 +1595,7 @@ filter_status_t filter_iir_coeff_calc_2nd_hpf(const float32_t fc, const float32_
         &&  ( NULL != p_zero ))
     {
         // Check Nyquist/Shannon sampling theorem
-        if ( fc < ( fs / 2.0f ))
+        if (( fc < ( fs / 2.0f )) && ( fc > 0.0f ) && ( fs > 0.0f ))
         {
             omega = ( 2.0f * ( (float32_t)M_PI * ( fc / fs )));
             alpha = ( sinf( omega ) * zeta );
@@ -1641,7 +1652,7 @@ filter_status_t filter_iir_coeff_calc_2nd_bpf(const float32_t fc, const float32_
         &&  (( r > 0.0f ) && ( r < 1.0f )))
     {
         // Check Nyquist/Shannon sampling theorem
-        if ( fc < ( fs / 2.0f ))
+        if (( fc < ( fs / 2.0f )) && ( fc > 0.0f ) && ( fs > 0.0f ))
         {
             omega = ( 2.0f * ( (float32_t)M_PI * ( fc / fs )));
             cos_omega = cosf( omega );
