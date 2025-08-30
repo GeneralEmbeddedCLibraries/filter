@@ -74,20 +74,19 @@ static void             filter_buf_fill             (const p_ring_buffer_t buf_i
 ////////////////////////////////////////////////////////////////////////////////
 static filter_status_t filter_rc_calculate_alpha(const float32_t fc, const float32_t fs, float32_t * const p_alpha)
 {
-    filter_status_t status = eFILTER_OK;
-
     // Check Nyquist/Shannon sampling theorem
     if  (   ( fc < ( fs / 2.0f ))
+        &&  ( fs > 0.0f )
+        &&  ( fc > 0.0f )
         &&  ( p_alpha != NULL ))
     {
         *p_alpha = (float32_t) ( 1.0f / ( 1.0f + ( fs / ( UTILS_TWOPI * fc ))));
+        return eFILTER_OK;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return eFILTER_ERROR;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,8 +101,6 @@ static filter_status_t filter_rc_calculate_alpha(const float32_t fc, const float
 ////////////////////////////////////////////////////////////////////////////////
 static filter_status_t filter_cr_calculate_alpha(const float32_t fc, const float32_t fs, float32_t * const p_alpha)
 {
-    filter_status_t status  = eFILTER_OK;
-
     // Check Nyquist/Shannon sampling theorem
     if (    ( fc < ( fs / 2.0f ))
         &&  ( fs > 0.0f )
@@ -111,9 +108,12 @@ static filter_status_t filter_cr_calculate_alpha(const float32_t fc, const float
         &&  ( p_alpha != NULL ))
     {
         *p_alpha = (float32_t) (( 1.0f / ( UTILS_TWOPI * fc )) / (( 1.0f / fs ) + ( 1.0f / ( UTILS_TWOPI * fc ))));
+        return eFILTER_OK;
     }
-
-    return status;
+    else
+    {
+        return eFILTER_ERROR;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -168,44 +168,50 @@ static void filter_buf_fill(const p_ring_buffer_t buf_inst, const float32_t val)
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value)
 {
-    filter_status_t status = eFILTER_OK;
+    if ( NULL == p_filter_inst ) return eFILTER_ERROR_INST;
 
-    if ( NULL != p_filter_inst )
+    // Check if that instance is already allocated
+    // By meaning that this buffer instance was initialised before...
+    if ( NULL != *p_filter_inst ) return eFILTER_ERROR_INIT;
+
+    // Allocate space
+    *p_filter_inst          = calloc( 1U, sizeof(filter_rc_t));
+    (*p_filter_inst)->p_y   = calloc( 1U, order * sizeof(float32_t));
+
+    // Check allocation
+    if (( NULL == *p_filter_inst ) || ( NULL == (*p_filter_inst)->p_y ))
     {
-        // Allocate space
-        *p_filter_inst          = calloc( 1U, sizeof(filter_rc_t));
-        (*p_filter_inst)->p_y   = calloc( 1U, order * sizeof(float32_t));
+        free(*p_filter_inst);
+        free((*p_filter_inst)->p_y);
+        *p_filter_inst = NULL;
+        return eFILTER_ERROR_MEM;
+    }
 
-        // Check if allocation succeed
-        if  (   ( NULL != *p_filter_inst )
-            &&  ( NULL != (*p_filter_inst)->p_y ))
+    // Calculate coefficient
+    if ( eFILTER_OK == filter_rc_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha ))
+    {
+        // Store order & fc
+        (*p_filter_inst)->order = order;
+        (*p_filter_inst)->fc = fc;
+        (*p_filter_inst)->fs = fs;
+
+        // Initial value
+        for ( uint32_t i = 0; i < order; i++)
         {
-            // Calculate coefficient
-            if ( eFILTER_OK == filter_rc_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha ))
-            {
-                // Store order & fc
-                (*p_filter_inst)->order = order;
-                (*p_filter_inst)->fc = fc;
-                (*p_filter_inst)->fs = fs;
-
-                // Initial value
-                memset( &(*p_filter_inst)->p_y, init_value, order );
-
-                // Init success
-                (*p_filter_inst)->is_init = true;
-            }
+            (*p_filter_inst)->p_y[i] = init_value;
         }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
+
+        // Init success
+        (*p_filter_inst)->is_init = true;
+        return eFILTER_OK;
     }
     else
     {
-        status = eFILTER_ERROR;
+        free(*p_filter_inst);
+        free((*p_filter_inst)->p_y);
+        *p_filter_inst = NULL;
+        return eFILTER_ERROR_INIT;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -227,31 +233,33 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_rc_init_static(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value)
 {
-    filter_status_t status = eFILTER_OK;
+    if ( NULL == filter_inst ) return eFILTER_ERROR_INST;
 
-    if (( NULL != filter_inst ) && ( NULL != filter_inst->p_y ))
+    // Check if filter memory is allocated
+    if ( NULL == filter_inst->p_y ) return eFILTER_ERROR_INIT;
+
+    // Calculate coefficient
+    if ( eFILTER_OK == filter_rc_calculate_alpha( fc, fs, &filter_inst->alpha ))
     {
-        // Calculate coefficient
-        if ( eFILTER_OK == filter_rc_calculate_alpha( fc, fs, &filter_inst->alpha ))
+        // Store order & fc
+        filter_inst->order = order;
+        filter_inst->fc = fc;
+        filter_inst->fs = fs;
+
+        // Initial value
+        for ( uint32_t i = 0; i < order; i++)
         {
-            // Store order & fc
-            filter_inst->order = order;
-            filter_inst->fc = fc;
-            filter_inst->fs = fs;
-
-            // Initial value
-            memset( &filter_inst->p_y, init_value, order );
-
-            // Init success
-            filter_inst->is_init = true;
+            filter_inst->p_y[i] = init_value;
         }
+
+        // Init success
+        filter_inst->is_init = true;
+        return eFILTER_OK;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return eFILTER_ERROR_INIT;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -491,46 +499,54 @@ filter_status_t filter_rc_fs_get(p_filter_rc_t filter_inst, float32_t * const p_
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order)
 {
-    filter_status_t status = eFILTER_OK;
+    if ( NULL == p_filter_inst ) return eFILTER_ERROR_INST;
 
-    if ( NULL != p_filter_inst )
+    // Check if that instance is already allocated
+    // By meaning that this buffer instance was initialised before...
+    if ( NULL != *p_filter_inst ) return eFILTER_ERROR_INIT;
+
+    // Allocate space
+    *p_filter_inst          = calloc( 1U, sizeof(filter_cr_t));
+    (*p_filter_inst)->p_y   = calloc( 1U, order * sizeof(float32_t));
+    (*p_filter_inst)->p_x   = calloc( 1U, order * sizeof(float32_t));
+
+    // Check if allocation succeed
+    if (( NULL == *p_filter_inst ) || ( NULL == (*p_filter_inst)->p_y ) || ( NULL == (*p_filter_inst)->p_x ))
     {
-        // Allocate space
-        *p_filter_inst          = calloc( 1U, sizeof(filter_cr_t));
-        (*p_filter_inst)->p_y   = calloc( 1U, order * sizeof(float32_t));
-        (*p_filter_inst)->p_x   = calloc( 1U, order * sizeof(float32_t));        
+        free(*p_filter_inst);
+        free((*p_filter_inst)->p_x);
+        free((*p_filter_inst)->p_y);
+        *p_filter_inst = NULL;
+        return eFILTER_ERROR_MEM;
+    }
 
-        // Check if allocation succeed
-        if  (   ( NULL != *p_filter_inst )
-            &&  ( NULL != (*p_filter_inst)->p_y )
-            &&  ( NULL != (*p_filter_inst)->p_x ))
+    // Calculate coefficient
+    if ( eFILTER_OK == filter_cr_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha ))
+    {
+        // Store order & fc
+        (*p_filter_inst)->order = order;
+        (*p_filter_inst)->fc = fc;
+        (*p_filter_inst)->fs = fs;
+
+        // Initial value
+        for ( uint32_t i = 0; i < order; i++)
         {
-            // Calculate coefficient
-            if ( eFILTER_OK == filter_cr_calculate_alpha( fc, fs, &(*p_filter_inst)->alpha ))
-            {
-                // Store order & fc
-                (*p_filter_inst)->order = order;
-                (*p_filter_inst)->fc = fc;
-
-                // Initial value
-                memset( &(*p_filter_inst)->p_y, 0.0f, order );
-                memset( &(*p_filter_inst)->p_x, 0.0f, order );
-
-                // Init success
-                (*p_filter_inst)->is_init = true;
-            }
+            (*p_filter_inst)->p_y[i] = 0.0f;
+            (*p_filter_inst)->p_x[i] = 0.0f;
         }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
+
+        // Init success
+        (*p_filter_inst)->is_init = true;
+        return eFILTER_OK;
     }
     else
     {
-        status = eFILTER_ERROR;
+        free(*p_filter_inst);
+        free((*p_filter_inst)->p_x);
+        free((*p_filter_inst)->p_y);
+        *p_filter_inst = NULL;
+        return eFILTER_ERROR_INIT;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -551,31 +567,34 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_cr_init_static(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order)
 {
-    filter_status_t status = eFILTER_OK;
+    if ( NULL == filter_inst ) return eFILTER_ERROR_INST;
 
-    if (( NULL != filter_inst ) && ( NULL != filter_inst->p_y ) && ( NULL != filter_inst->p_x ))
+    // Check if filter memory is allocated
+    if (( NULL == filter_inst->p_y ) || ( NULL == filter_inst->p_x )) return eFILTER_ERROR_INIT;
+
+    // Calculate coefficient
+    if ( eFILTER_OK == filter_cr_calculate_alpha( fc, fs, &filter_inst->alpha ))
     {
-        // Calculate coefficient
-        if ( eFILTER_OK == filter_cr_calculate_alpha( fc, fs, &filter_inst->alpha ))
+        // Store order & fc
+        filter_inst->order = order;
+        filter_inst->fc = fc;
+        filter_inst->fs = fs;
+
+        // Initial value
+        for ( uint32_t i = 0; i < order; i++)
         {
-            // Store order & fc
-            filter_inst->order = order;
-            filter_inst->fc = fc;
-
-            // Initial value
-            memset( &filter_inst->p_y, 0.0f, order );
-            memset( &filter_inst->p_x, 0.0f, order );
-
-            // Init success
-            filter_inst->is_init = true;
+            filter_inst->p_y[i] = 0.0f;
+            filter_inst->p_x[i] = 0.0f;
         }
+
+        // Init success
+        filter_inst->is_init = true;
+        return eFILTER_OK;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return eFILTER_ERROR_INIT;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -822,41 +841,37 @@ filter_status_t filter_cr_fs_get(p_filter_cr_t filter_inst, float32_t * const p_
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)
 {
-    filter_status_t status = eFILTER_OK;
+    if ( NULL == p_filter_inst ) return eFILTER_ERROR_INST;
 
+    // Check if that instance is already allocated
+    // By meaning that this buffer instance was initialised before...
+    // Check args
+    if (( NULL != *p_filter_inst ) || ( comp_lvl < 0.0f ) || ( comp_lvl > 0.4f )) return eFILTER_ERROR_INIT;
+
+    // Allocate space
+    *p_filter_inst = calloc( 1U, sizeof(filter_bool_t));
+
+    // Check allocation
     if ( NULL != p_filter_inst )
     {
-        // Allocate space
-        *p_filter_inst = calloc( 1U, sizeof(filter_bool_t));
+        return eFILTER_ERROR_MEM;
+    }
 
-        // Check if allocation succeed & valid configs
-        if  (   ( NULL != p_filter_inst )
-            &&  (( comp_lvl > 0.0f ) && ( comp_lvl < 0.4f )))
-        {
-            // Init LPF
-            (*p_filter_inst)->lpf.p_y = &((*p_filter_inst)->lpf_mem);
-            status = filter_rc_init_static( &(*p_filter_inst)->lpf, fc, fs, 1U, 0.0f );
+    // Init LPF
+    (*p_filter_inst)->lpf.p_y = &((*p_filter_inst)->lpf_mem);
+    if ( eFILTER_OK == filter_rc_init_static( &(*p_filter_inst)->lpf, fc, fs, 1U, 0.0f ))
+    {
+        (*p_filter_inst)->comp_lvl  = comp_lvl;
+        (*p_filter_inst)->y = false;
 
-            if ( eFILTER_OK == status )
-            {
-                (*p_filter_inst)->comp_lvl  = comp_lvl;
-                (*p_filter_inst)->y = false;
-
-                // Init succeed
-                (*p_filter_inst)->is_init = true;
-            }
-        }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
+        // Init succeed
+        (*p_filter_inst)->is_init = true;
+        return eFILTER_OK;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return eFILTER_ERROR_INIT;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -886,29 +901,28 @@ filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_bool_init_static(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)
 {
-    filter_status_t status = eFILTER_OK;
+    if ( NULL == filter_inst ) return eFILTER_ERROR_INST;
 
-    if (( NULL != filter_inst ) &&  (( comp_lvl > 0.0f ) && ( comp_lvl < 0.4f )))
+    // Check args
+    if (( comp_lvl < 0.0f ) || ( comp_lvl > 0.4f )) return eFILTER_ERROR_INIT;
+
+    // Assign LPF memory
+    filter_inst->lpf.p_y = &filter_inst->lpf_mem;
+
+    // Init LPF
+    if ( eFILTER_OK == filter_rc_init_static( &filter_inst->lpf, fc, fs, 1U, 0.0f ))
     {
-        // Assign LPF memory
-        filter_inst->lpf.p_y = &filter_inst->lpf_mem;
+        filter_inst->comp_lvl  = comp_lvl;
+        filter_inst->y = false;
 
-        // Init LPF
-        if ( eFILTER_OK == filter_rc_init_static( &filter_inst->lpf, fc, fs, 1U, 0.0f ))
-        {
-            filter_inst->comp_lvl  = comp_lvl;
-            filter_inst->y = false;
-
-            // Init succeed
-            filter_inst->is_init = true;
-        }
+        // Init succeed
+        filter_inst->is_init = true;
+        return eFILTER_OK;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return eFILTER_ERROR_MEM;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1035,7 +1049,7 @@ filter_status_t filter_bool_reset(p_filter_bool_t filter_inst)
 * @return       status      - Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_boot_fc_set(p_filter_bool_t filter_inst, const float32_t fc)
+filter_status_t filter_bool_fc_set(p_filter_bool_t filter_inst, const float32_t fc)
 {
     filter_status_t status = eFILTER_OK;
 
@@ -1169,6 +1183,8 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
     // Check allocation
     if ( NULL == (*p_filter_inst)->p_a )
     {
+        free(*p_filter_inst);
+        *p_filter_inst = NULL;
         return eFILTER_ERROR_MEM;
     }
 
@@ -1199,6 +1215,10 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
     }
     else
     {
+        free(*p_filter_inst);
+        free((*p_filter_inst)->p_a);
+        free(buf_attr.p_mem);
+        *p_filter_inst = NULL;
         return eFILTER_ERROR_INIT;
     }
 }
@@ -1506,6 +1526,8 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
     // Check allocation
     if (( NULL == (*p_filter_inst)->coeff.p_pole  ) || ( NULL == (*p_filter_inst)->coeff.p_zero  ))
     {
+        free(*p_filter_inst);
+        *p_filter_inst = NULL;
         return eFILTER_ERROR_MEM;
     }
 
@@ -1546,6 +1568,11 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
     }
     else
     {
+        free(*p_filter_inst);
+        free((*p_filter_inst)->coeff.p_pole);
+        free((*p_filter_inst)->coeff.p_zero);
+        free(buf_attr.p_mem);
+        *p_filter_inst = NULL;
         return eFILTER_ERROR_INIT;
     }
 }
