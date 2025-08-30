@@ -207,8 +207,8 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
     }
     else
     {
-        free(*p_filter_inst);
         free((*p_filter_inst)->p_y);
+        free(*p_filter_inst);
         *p_filter_inst = NULL;
         return eFILTER_ERROR_INIT;
     }
@@ -295,7 +295,7 @@ bool filter_rc_is_init(p_filter_rc_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_rc_hndl(p_filter_rc_t filter_inst, const float32_t in)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
     for ( uint32_t n = 0; n < filter_inst->order; n++)
     {
@@ -491,9 +491,9 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
     }
     else
     {
-        free(*p_filter_inst);
         free((*p_filter_inst)->p_x);
         free((*p_filter_inst)->p_y);
+        free(*p_filter_inst);
         *p_filter_inst = NULL;
         return eFILTER_ERROR_INIT;
     }
@@ -580,7 +580,7 @@ bool filter_cr_is_init(p_filter_cr_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_cr_hndl(p_filter_cr_t filter_inst, const float32_t in)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
     for ( uint32_t n = 0U; n < filter_inst->order; n++)
     {
@@ -756,7 +756,7 @@ filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_
     *p_filter_inst = calloc( 1U, sizeof(filter_bool_t));
 
     // Check allocation
-    if ( NULL != p_filter_inst )
+    if ( NULL == *p_filter_inst )
     {
         return eFILTER_ERROR_MEM;
     }
@@ -774,6 +774,7 @@ filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_
     }
     else
     {
+        free(*p_filter_inst);
         return eFILTER_ERROR_INIT;
     }
 }
@@ -825,7 +826,7 @@ filter_status_t filter_bool_init_static(p_filter_bool_t filter_inst, const float
     }
     else
     {
-        return eFILTER_ERROR_MEM;
+        return eFILTER_ERROR_INIT;
     }
 }
 
@@ -862,7 +863,7 @@ bool filter_bool_is_init(p_filter_bool_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 bool filter_bool_hndl(p_filter_bool_t filter_inst, const bool in)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
     // Apply filter
     const float32_t filt_out = filter_rc_hndl( &filter_inst->lpf, (float32_t) in );
@@ -1063,20 +1064,24 @@ filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t 
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Initialize statically FIR filter
-*
-* @note     Filter order cannot be changed later!
-*
-* @note     Do not change "p_mem" and "p_a" memory after initialization,
-*           as they are used for filtering purposes!
-*
-* @note     Filter memory size must be equal to "order * sizeof(float32_t)"!
-*
-* @param[in]    p_filter_inst   - Pointer to FIR filter instance
-* @param[in]    p_mem           - Filter memory
-* @param[in]    p_a             - FIR coefficients
-* @param[in]    order           - Number of taps
-* @return       status          - Status of operation
+ * @brief   Initialize FIR filter instance using statically allocated memory.
+ *
+ * @param[in,out] filter_inst  Pointer to FIR filter instance structure.
+ * @param[in]     p_a          Pointer to coefficient array of length @p order.
+ *                             The caller must ensure this array remains valid
+ *                             and unchanged for the lifetime of the filter instance.
+ * @param[in]     order        Filter order (number of taps).
+ * @param[in]     p_mem        Pointer to caller-provided memory buffer for state.
+ *                             Must be preallocated with exactly
+ *                             @p order * sizeof(float32_t) bytes.
+ * @param[in]     reset_value  Initial value to prefill the state buffer.
+ *
+ * @return eFILTER_OK on success, error code otherwise.
+ *
+ * @note
+ * - No dynamic memory is allocated inside this function.
+ * - The caller is responsible for keeping @p p_a and @p p_mem alive for the
+ *   lifetime of the filter instance.
 */
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_fir_init_static(p_filter_fir_t filter_inst, const float32_t * p_mem, const float32_t * p_a, const uint32_t order, const float32_t init_value)
@@ -1163,7 +1168,7 @@ bool filter_fir_is_init(p_filter_fir_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
     // Add new sample to buffer
     ring_buffer_add( &filter_inst->buf_x, (float32_t*) &in );
@@ -1364,11 +1369,14 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
     };
 
     // Allocate and create buffer for inputs
-    buf_attr.p_mem = calloc( 1U, ( p_coeff->num_of_zero * sizeof(float32_t)));
+    float32_t *in_mem = NULL, *out_mem = NULL;
+    in_mem  = calloc(1U, p_coeff->num_of_zero * sizeof(float32_t));
+    buf_attr.p_mem = in_mem;
     buf_status  = ring_buffer_init_static( &(*p_filter_inst)->buf_x, p_coeff->num_of_zero, &buf_attr );
 
     // Allocate and create buffer for outputs
-    buf_attr.p_mem = calloc( 1U, ( p_coeff->num_of_pole * sizeof(float32_t)));
+    out_mem = calloc(1U, p_coeff->num_of_pole * sizeof(float32_t));
+    buf_attr.p_mem = out_mem;
     buf_status |= ring_buffer_init_static( &(*p_filter_inst)->buf_y, p_coeff->num_of_pole, &buf_attr );
 
     // Check if ring buffer created
@@ -1391,10 +1399,11 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
     }
     else
     {
-        free(*p_filter_inst);
+        free(in_mem);
+        free(out_mem);
         free((*p_filter_inst)->coeff.p_pole);
         free((*p_filter_inst)->coeff.p_zero);
-        free(buf_attr.p_mem);
+        free(*p_filter_inst);
         *p_filter_inst = NULL;
         return eFILTER_ERROR_INIT;
     }
@@ -1402,34 +1411,27 @@ filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*   Initialize statically IIR filter
-*
-*   General IIR filter difference equation:
-*
-*       y[n] = 1/a[0] * ( SUM( b[i] * x[n-i]) - ( SUM( a[i+1] * y[n-i-1] )))
-*
-*
-*   General IIR impulse response in time discrete space:
-*
-*       H(z) = ( b0 + b1*z^-1 + b2*z^-2 + ... bn*z^(-n-1) ) / ( -a0 - a1*z^-1 - a2*z^-2 - ... - an*z^(-n-1)),
-*
-*           where:     a - filter poles,
-*                   b - filter zeros
-*
-* @note Make sure that a[0] is non-zero value as it can later result in division by zero error!
-*
-* @note     Number of zeros and poles cannot be change later!
-*
-* @note     Do not change reference to "p_coeff" as filter instance is using it!
-*
-* @note     Do not change reference to "p_mem" as filter instance is using it!
-*
-* @note     Memory must be size of "(num_of_zero + num_of_pole) * sizeof(float32_t)"!
-*
-* @param[in]    filter_inst - IIR filter instance
-* @param[in]    p_mem       - Filter memory
-* @param[in]    p_coeff     - IIR filter coefficients
-* @return       status      - Status of operation
+ * @brief   Initialize IIR filter instance using statically allocated memory.
+ *
+ * @param[in,out] filter_inst  Pointer to IIR filter instance structure.
+ * @param[in]     p_coeff      Pointer to coefficient descriptor (poles & zeros).
+ *                             The caller must ensure this structure and its
+ *                             coefficient arrays remain valid and unchanged
+ *                             for the lifetime of the filter instance.
+ * @param[in]     p_mem        Pointer to caller-provided memory buffer for state.
+ *                             Must be preallocated with exactly
+ *                             (num_of_zero + num_of_pole) * sizeof(float32_t) bytes.
+ *                             The first @p num_of_zero elements are used for
+ *                             the input history, the next @p num_of_pole elements
+ *                             are used for the output history.
+ * @param[in]     reset_value  Initial value to prefill both history buffers.
+ *
+ * @return eFILTER_OK on success, error code otherwise.
+ *
+ * @note
+ * - No dynamic memory is allocated inside this function.
+ * - The caller is responsible for keeping @p p_coeff and @p p_mem alive for the
+ *   lifetime of the filter instance.
 */
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_iir_init_static(p_filter_iir_t filter_inst, const float32_t * p_mem, const filter_iir_coeff_t * const p_coeff)
@@ -1462,7 +1464,7 @@ filter_status_t filter_iir_init_static(p_filter_iir_t filter_inst, const float32
     buf_status  = ring_buffer_init_static( &filter_inst->buf_x, p_coeff->num_of_zero, &buf_attr );
 
     // Assign memory offset and create buffer for outputs
-    buf_attr.p_mem = (float32_t*) &p_mem[p_coeff->num_of_zero * sizeof(float32_t)];
+    buf_attr.p_mem = (float32_t*) &p_mem[p_coeff->num_of_zero];
     buf_status |= ring_buffer_init_static( &filter_inst->buf_y, p_coeff->num_of_pole, &buf_attr );
 
     // Check if ring buffer created
@@ -1519,7 +1521,7 @@ bool filter_iir_is_init(p_filter_iir_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in)
 {
-    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
     // Add new input to buffer
     ring_buffer_add( &filter_inst->buf_x, (float32_t*) &in );
@@ -1579,6 +1581,10 @@ filter_status_t filter_iir_reset(p_filter_iir_t filter_inst, const float32_t rst
         // Is instance init?
         if ( true == filter_inst->is_init )
         {
+            // Reset buffers
+            ring_buffer_reset( &filter_inst->buf_x );
+            ring_buffer_reset( &filter_inst->buf_y );
+
             // Fill buffers with zero
             filter_buf_fill( &filter_inst->buf_x, rst_val );
             filter_buf_fill( &filter_inst->buf_y, rst_val );
