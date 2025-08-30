@@ -5,9 +5,9 @@
 /**
 *@file      filter.c
 *@brief     Various filter designs
-*@author    Ziga Miklosic
-*@date      21.01.2025
-*@version   V2.1.0
+*@email     ziga.miklosic@gmail.com
+*@date      30.08.2025
+*@version   V3.0.0
 *
 *@section   Description
 *   
@@ -267,25 +267,19 @@ filter_status_t filter_rc_init_static(p_filter_rc_t filter_inst, const float32_t
 *       Get initialization status of RC filter
 *
 * @param[in]    filter_inst - RC filter instance
-* @param[out]   p_is_init   - RC filter init state
-* @return       status      - Status of operation
+* @return       true if buffer instance is initialized
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_rc_is_init(p_filter_rc_t filter_inst, bool * const p_is_init)
+bool filter_rc_is_init(p_filter_rc_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_is_init ))
+    if ( NULL != filter_inst )
     {
-        *p_is_init = filter_inst->is_init;
+        return filter_inst->is_init;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return false;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -296,42 +290,26 @@ filter_status_t filter_rc_is_init(p_filter_rc_t filter_inst, bool * const p_is_i
 *
 * @param[in]    filter_inst - RC filter instance
 * @param[in]    in          - Input value
-* @param[out]   p_out       - Output (filtered) value
-* @return       status      - Status of operation
+* @return       Output (filtered) value
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_rc_hndl(p_filter_rc_t filter_inst, const float32_t in, float32_t * const p_out)
+float32_t filter_rc_hndl(p_filter_rc_t filter_inst, const float32_t in)
 {
-    filter_status_t status = eFILTER_OK;
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
-    // Check for instance and success init
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_out ))
+    for ( uint32_t n = 0; n < filter_inst->order; n++)
     {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
+        if ( 0 == n )
         {
-            for ( uint32_t n = 0; n < filter_inst->order; n++)
-            {
-                if ( 0 == n )
-                {
-                    filter_inst->p_y[0] = ( filter_inst->p_y[0] + ( filter_inst->alpha * ( in - filter_inst->p_y[0] )));
-                }
-                else
-                {
-                    filter_inst->p_y[n] = ( filter_inst->p_y[n] + ( filter_inst->alpha * ( filter_inst->p_y[n-1] - filter_inst->p_y[n] )));
-                }
-            }
-
-            *p_out = filter_inst->p_y[ filter_inst->order - 1U ];
+            filter_inst->p_y[0] = ( filter_inst->p_y[0] + ( filter_inst->alpha * ( in - filter_inst->p_y[0] )));
+        }
+        else
+        {
+            filter_inst->p_y[n] = ( filter_inst->p_y[n] + ( filter_inst->alpha * ( filter_inst->p_y[n-1] - filter_inst->p_y[n] )));
         }
     }
-    else
-    {
-        status = eFILTER_ERROR;
-    }
 
-    return status;
+    return filter_inst->p_y[ filter_inst->order - 1U ];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -418,33 +396,19 @@ filter_status_t filter_rc_fc_set(p_filter_rc_t filter_inst, const float32_t fc)
 *       Get RC filter cutoff frequency
 *
 * @param[in]    filter_inst - RC filter instance
-* @param[out]   p_fc        - Filter cutoff frequency in Hz
-* @return       status      - Status of operation
+* @return       Filter cutoff frequency in Hz
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_rc_fc_get(p_filter_rc_t filter_inst, float32_t * const p_fc)
+float32_t filter_rc_fc_get(p_filter_rc_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_fc ))
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init ))
     {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
-        {
-            *p_fc = filter_inst->fc;
-        }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
+        return 0;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return filter_inst->fc;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -452,33 +416,19 @@ filter_status_t filter_rc_fc_get(p_filter_rc_t filter_inst, float32_t * const p_
 *       Get RC filter sampling frequency
 *
 * @param[in]    filter_inst - RC filter instance
-* @param[out]   p_fs        - Filter sampling frequency in Hz
-* @return       status      - Status of operation
+* @return       Filter sampling frequency in Hz
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_rc_fs_get(p_filter_rc_t filter_inst, float32_t * const p_fs)
+float32_t filter_rc_fs_get(p_filter_rc_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_fs ))
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init ))
     {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
-        {
-            *p_fs = filter_inst->fs;
-        }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
+        return 0;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return filter_inst->fs;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -602,25 +552,19 @@ filter_status_t filter_cr_init_static(p_filter_cr_t filter_inst, const float32_t
 *       Get initialization status of CR filter
 *
 * @param[in]    filter_inst - CR filter instance
-* @param[out]   p_is_init   - CR filter init state
-* @return       status      - Status of operation
+* @return       true if buffer instance is initialized
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_cr_is_init(p_filter_cr_t filter_inst, bool * const p_is_init)
+bool filter_cr_is_init(p_filter_cr_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_is_init ))
+    if ( NULL != filter_inst )
     {
-        *p_is_init = filter_inst->is_init;
+        return filter_inst->is_init;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return false;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -631,40 +575,28 @@ filter_status_t filter_cr_is_init(p_filter_cr_t filter_inst, bool * const p_is_i
 *
 * @param[in]    filter_inst - CR filter instance
 * @param[in]    in          - Input value
-* @param[out]   p_out       - Output (filtered) value
-* @return       status      - Status of operation
+* @return       Output (filtered) value
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_cr_hndl(p_filter_cr_t filter_inst, const float32_t in, float32_t * const p_out)
+float32_t filter_cr_hndl(p_filter_cr_t filter_inst, const float32_t in)
 {
-    filter_status_t status = eFILTER_OK;
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
-    // Check for instance and success init
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_out ))
+    for ( uint32_t n = 0U; n < filter_inst->order; n++)
     {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
+        if ( 0U == n )
         {
-            for ( uint32_t n = 0U; n < filter_inst->order; n++)
-            {
-                if ( 0U == n )
-                {
-                    filter_inst->p_y[0] = (( filter_inst->alpha * filter_inst->p_y[0] ) + ( filter_inst->alpha * ( in - filter_inst->p_x[0] )));
-                    filter_inst->p_x[0] = in;
-                }
-                else
-                {
-                    filter_inst->p_y[n] = (( filter_inst->alpha * filter_inst->p_y[n] ) + ( filter_inst->alpha * ( filter_inst->p_y[n-1] - filter_inst->p_x[n] )));
-                    filter_inst->p_x[n] = filter_inst->p_y[n-1];
-                }
-            }
-
-            *p_out = filter_inst->p_y[ filter_inst->order - 1U ];
+            filter_inst->p_y[0] = (( filter_inst->alpha * filter_inst->p_y[0] ) + ( filter_inst->alpha * ( in - filter_inst->p_x[0] )));
+            filter_inst->p_x[0] = in;
+        }
+        else
+        {
+            filter_inst->p_y[n] = (( filter_inst->alpha * filter_inst->p_y[n] ) + ( filter_inst->alpha * ( filter_inst->p_y[n-1] - filter_inst->p_x[n] )));
+            filter_inst->p_x[n] = filter_inst->p_y[n-1];
         }
     }
 
-    return status;
+    return filter_inst->p_y[ filter_inst->order - 1U ];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -751,33 +683,19 @@ filter_status_t filter_cr_fc_set(p_filter_cr_t filter_inst, const float32_t fc)
 *       Get CR filter cutoff frequency
 *
 * @param[in]    filter_inst - CR filter instance
-* @param[out]   p_fc        - Filter cutoff frequency in Hz
-* @return       status      - Status of operation
+* @return       Filter cutoff frequency in Hz
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_cr_fc_get(p_filter_cr_t filter_inst, float32_t * const p_fc)
+float32_t filter_cr_fc_get(p_filter_cr_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_fc ))
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init ))
     {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
-        {
-            *p_fc = filter_inst->fc;
-        }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
+        return 0;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return filter_inst->fc;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -785,33 +703,19 @@ filter_status_t filter_cr_fc_get(p_filter_cr_t filter_inst, float32_t * const p_
 *       Get CR filter sampling frequency
 *
 * @param[in]    filter_inst - CR filter instance
-* @param[out]   p_fs        - Filter sampling frequency in Hz
-* @return       status      - Status of operation
+* @return       Filter sampling frequency in Hz
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_cr_fs_get(p_filter_cr_t filter_inst, float32_t * const p_fs)
+float32_t filter_cr_fs_get(p_filter_cr_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_fs ))
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init ))
     {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
-        {
-            *p_fs = filter_inst->fs;
-        }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
+        return 0;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return filter_inst->fs;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -930,25 +834,19 @@ filter_status_t filter_bool_init_static(p_filter_bool_t filter_inst, const float
 *       Get initialization status of boolean filter
 *
 * @param[in]    filter_inst - Boolean filter instance
-* @param[out]   p_is_init   - Boolean filter init state
-* @return       status      - Status of operation
+* @return       true if buffer instance is initialized
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_is_init)
+bool filter_bool_is_init(p_filter_bool_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_is_init ))
+    if ( NULL != filter_inst )
     {
-        *p_is_init = filter_inst->is_init;
+        return filter_inst->is_init;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return false;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -959,50 +857,32 @@ filter_status_t filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_
 *
 * @param[in]    filter_inst - Boolean filter instance
 * @param[in]    in          - Input value
-* @param[out]   p_out       - Output (filtered) value
-* @return       status      - Status of operation
+* @return       Output (filtered) value
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_bool_hndl(p_filter_bool_t filter_inst, const bool in, bool * const p_out)
+bool filter_bool_hndl(p_filter_bool_t filter_inst, const bool in)
 {
-    filter_status_t status      = eFILTER_OK;
-    float32_t       filt_in     = 0.0f;
-    float32_t       filt_out    = 0.0f;
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_out ))
+    // Apply filter
+    const float32_t filt_out = filter_rc_hndl( &filter_inst->lpf, (float32_t) in );
+
+    // Apply comparator
+    if (( false == filter_inst->y ) && ( filt_out >= ( 1.0f - filter_inst->comp_lvl )))
     {
-        // Convert input to floating
-        filt_in = (float32_t) in;
-
-        // Apply filter
-        (void) filter_rc_hndl( &filter_inst->lpf, filt_in, &filt_out );
-
-        // Apply comparator
-        if  (   ( false == filter_inst->y )
-            &&  ( filt_out >= ( 1.0f - filter_inst->comp_lvl )))
-        {
-            filter_inst->y  = true;
-        }
-        else if (   ( true == filter_inst->y )
-                &&  ( filt_out <= filter_inst->comp_lvl ))
-        {
-            filter_inst->y  = false;
-        }
-        else
-        {
-            // No actions...
-        }
-
-        // Return output
-        *p_out = filter_inst->y;
+        filter_inst->y  = true;
+    }
+    else if (( true == filter_inst->y ) &&  ( filt_out <= filter_inst->comp_lvl ))
+    {
+        filter_inst->y  = false;
     }
     else
     {
-        status = eFILTER_ERROR;
+        // No actions...
     }
 
-    return status;
+    // Return output
+    return filter_inst->y;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1079,33 +959,12 @@ filter_status_t filter_bool_fc_set(p_filter_bool_t filter_inst, const float32_t 
 *       Get Boolean filter cutoff frequency
 *
 * @param[in]    filter_inst - Boolean filter instance
-* @param[out]   p_fc        - Filter cutoff frequency in Hz
-* @return       status      - Status of operation
+* @return       Filter cutoff frequency in Hz
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_bool_fc_get(p_filter_bool_t filter_inst, float32_t * const p_fc)
+float32_t filter_bool_fc_get(p_filter_bool_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_fc ))
-    {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
-        {
-            (void) filter_rc_fc_get( &filter_inst->lpf, p_fc );
-        }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
-    }
-    else
-    {
-        status = eFILTER_ERROR;
-    }
-
-    return status;
+    return filter_rc_fc_get( &filter_inst->lpf );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1113,33 +972,12 @@ filter_status_t filter_bool_fc_get(p_filter_bool_t filter_inst, float32_t * cons
 *       Get Boolean filter sampling frequency
 *
 * @param[in]    filter_inst - RC filter instance
-* @param[out]   p_fs        - Filter sampling frequency in Hz
-* @return       status      - Status of operation
+* @return       Filter sampling frequency in Hz
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_bool_fs_get(p_filter_bool_t filter_inst, float32_t * const p_fs)
+float32_t filter_bool_fs_get(p_filter_bool_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_fs ))
-    {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
-        {
-            (void) filter_rc_fs_get( &filter_inst->lpf, p_fs );
-        }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
-    }
-    else
-    {
-        status = eFILTER_ERROR;
-    }
-
-    return status;
+    return filter_rc_fs_get( &filter_inst->lpf );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1285,25 +1123,19 @@ filter_status_t filter_fir_init_static(p_filter_fir_t filter_inst, const float32
 *       Get initialization status of FIR filter
 *
 * @param[in]    filter_inst - FIR filter instance
-* @param[out]   p_is_init   - FIR filter init state
-* @return       status      - Status of operation
+* @return       true if buffer instance is initialized
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_fir_is_init(p_filter_fir_t filter_inst, bool * const p_is_init)
+bool filter_fir_is_init(p_filter_fir_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_is_init ))
+    if ( NULL != filter_inst )
     {
-        *p_is_init = filter_inst->is_init;
+        return filter_inst->is_init;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return false;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1326,38 +1158,29 @@ filter_status_t filter_fir_is_init(p_filter_fir_t filter_inst, bool * const p_is
 *
 * @param[in]    filter_inst - FIR filter instance
 * @param[in]    in          - Input value
-* @param[out]   p_out       - Output (filtered) value
-* @return       status      - Status of operation
+* @return       Output (filtered) value
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in, float32_t * const p_out)
+float32_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in)
 {
-    filter_status_t status  = eFILTER_OK;
-    float32_t       buf_val = 0.0f;
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
-    // Check for instance and success init
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_out ))
+    // Add new sample to buffer
+    ring_buffer_add( &filter_inst->buf_x, (float32_t*) &in );
+
+    // Make convolution
+    float32_t output = 0.0f;
+    for ( uint32_t i = 0U; i < filter_inst->order; i++ )
     {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
-        {
-            // Add new sample to buffer
-            ring_buffer_add( &filter_inst->buf_x, (float32_t*) &in );
+        // Get buffer value
+        float32_t buf_val;
+        ring_buffer_get_by_index( &filter_inst->buf_x, (float32_t*) &buf_val,  (int32_t)(( -i ) - 1U ));
 
-            // Make convolution
-            for ( uint32_t i = 0U; i < filter_inst->order; i++ )
-            {
-                // Get buffer value
-                ring_buffer_get_by_index( &filter_inst->buf_x, (float32_t*) &buf_val,  (int32_t)(( -i ) - 1U ));
-
-                // Calculate convolution
-                *p_out += ( filter_inst->p_a[i] * buf_val );
-            }
-        }
+        // Calculate convolution
+        output += ( filter_inst->p_a[i] * buf_val );
     }
 
-    return status;
+    return output;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1665,25 +1488,19 @@ filter_status_t filter_iir_init_static(p_filter_iir_t filter_inst, const float32
 *       Get initialization status of IIR filter
 *
 * @param[in]    filter_inst - IIR filter instance
-* @param[out]   p_is_init   - IIR filter init state
-* @return       status      - Status of operation
+* @return       true if buffer instance is initialized
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_iir_is_init(p_filter_iir_t filter_inst, bool * const p_is_init)
+bool filter_iir_is_init(p_filter_iir_t filter_inst)
 {
-    filter_status_t status = eFILTER_OK;
-
-    if  (   ( NULL != filter_inst )
-        &&  ( NULL != p_is_init ))
+    if ( NULL != filter_inst )
     {
-        *p_is_init = filter_inst->is_init;
+        return filter_inst->is_init;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return false;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1697,59 +1514,51 @@ filter_status_t filter_iir_is_init(p_filter_iir_t filter_inst, bool * const p_is
 *
 * @param[in]    filter_inst - IIR filter instance
 * @param[in]    in          - Input value
-* @param[out]   p_out       - Output (filtered) value
-* @return       status      - Status of operation
+* @return       Output (filtered) value
 */
 ////////////////////////////////////////////////////////////////////////////////
-filter_status_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in, float32_t * const p_out)
+float32_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in)
 {
-    filter_status_t status  = eFILTER_OK;
-    float32_t       buf_val = 0.0f;
+    if (( NULL != filter_inst ) || ( false == filter_inst->is_init )) return 0;
 
-    // Check for instance and success init
-    if ( NULL != filter_inst )
+    // Add new input to buffer
+    ring_buffer_add( &filter_inst->buf_x, (float32_t*) &in );
+
+    // Calculate filter value
+    float32_t output = 0.0f;
+    float32_t buf_val = 0.0f;
+    for ( uint32_t i = 0; i < filter_inst->coeff.num_of_zero; i++ )
     {
-        // Is instance init?
-        if ( true == filter_inst->is_init )
-        {
-            // Add new input to buffer
-            ring_buffer_add( &filter_inst->buf_x, (float32_t*) &in );
+        // Get sample
+        ring_buffer_get_by_index( &filter_inst->buf_x, (float32_t*) &buf_val, (int32_t)(( -i ) - 1 ));
 
-            // Calculate filter value
-            for ( uint32_t i = 0; i < filter_inst->coeff.num_of_zero; i++ )
-            {
-                // Get sample
-                ring_buffer_get_by_index( &filter_inst->buf_x, (float32_t*) &buf_val, (int32_t)(( -i ) - 1 ));
-
-                // Sum zeros
-                *p_out += ( filter_inst->coeff.p_zero[i] * buf_val );
-            }
-
-            for ( uint32_t i = 1; i < filter_inst->coeff.num_of_pole; i++ )
-            {
-                // Get sample
-                ring_buffer_get_by_index( &filter_inst->buf_y, (float32_t*) &buf_val, (int32_t)-i );
-
-                // Subtract sum of poles
-                *p_out -= ( filter_inst->coeff.p_pole[i] * buf_val );
-            }
-
-            // Check division by
-            if ( filter_inst->coeff.p_pole[0] == 0.0f )
-            {
-                *p_out = NAN;
-            }
-            else
-            {
-                *p_out = ( *p_out / filter_inst->coeff.p_pole[0] );
-            }
-
-            // Add new output to buffer
-            (void) ring_buffer_add( &filter_inst->buf_y, (float32_t*) p_out );
-        }
+        // Sum zeros
+        output += ( filter_inst->coeff.p_zero[i] * buf_val );
     }
 
-    return status;
+    for ( uint32_t i = 1; i < filter_inst->coeff.num_of_pole; i++ )
+    {
+        // Get sample
+        ring_buffer_get_by_index( &filter_inst->buf_y, (float32_t*) &buf_val, (int32_t)-i );
+
+        // Subtract sum of poles
+        output -= ( filter_inst->coeff.p_pole[i] * buf_val );
+    }
+
+    // Check division by
+    if ( filter_inst->coeff.p_pole[0] == 0.0f )
+    {
+        output = NAN;
+    }
+    else
+    {
+        output = ( output / filter_inst->coeff.p_pole[0] );
+    }
+
+    // Add new output to buffer
+    (void) ring_buffer_add( &filter_inst->buf_y, (float32_t*) &output );
+
+    return output;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

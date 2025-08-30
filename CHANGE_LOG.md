@@ -5,19 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project/module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
-## V2.2.0 - xx.xx.2025
+## V3.0.0 - 30.08.2025
 
 ### Added
- - Added static initialization to RC filter
+ - Added static initialization for all filter types
 
 ### Changed
  - Two pi definition replace with one from utils
+ - Major API changed, making more convenient
 
 ### Fixed
  - Resolved compiler warnings
-
-### Todo
- - Adopt API to ress restrictive, return actual value not statuses... ---> THIS WILL INCREASE A MAJOR VERSION NUMBER!!!
 
 ---
 ## V2.1.0 - 21.01.2025
