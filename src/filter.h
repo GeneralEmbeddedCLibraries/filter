@@ -29,6 +29,9 @@
 // Common goods
 #include "common/utils/src/utils.h"
 
+// Middleware
+#include "middleware/ring_buffer/src/ring_buffer.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,8 +48,11 @@
  */
 enum
 {
-    eFILTER_OK      = 0x00U,        /**<Normal operation */
-    eFILTER_ERROR   = 0x01U,        /**<General error */
+    eFILTER_OK          = 0x00U,    /**<Normal operation */
+    eFILTER_ERROR       = 0x01U,    /**<General error */
+    eFILTER_ERROR_INIT  = 0x02U,    /**<Initialization error */
+    eFILTER_ERROR_MEM   = 0x04U,    /**<Memory allocation error */
+    eFILTER_ERROR_INST  = 0x08U,    /**<Buffer instance missing */
 };
 typedef uint8_t filter_status_t;
 
@@ -95,7 +101,15 @@ typedef filter_bool_t * p_filter_bool_t;
 /**
  *     FIR filter instance type
  */
-typedef struct filter_fir_s * p_filter_fir_t;
+typedef struct
+{
+    ring_buffer_t     buf_x;        /**<Previous values of input filter */
+    float32_t       * p_a;          /**<Filter coefficients */
+    uint32_t          order;        /**<Number of FIR filter taps - order of filter */
+    bool              is_init;      /**<Filter instance initialization success flag */
+} filter_fir_t;
+
+typedef filter_fir_t * p_filter_fir_t;
 
 /**
  *     IIR filter instance type
@@ -149,6 +163,7 @@ filter_status_t filter_bool_fs_get      (p_filter_bool_t filter_inst, float32_t 
 
 // FIR filter API
 filter_status_t filter_fir_init         (p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order, const float32_t init_value);
+filter_status_t filter_fir_init_static  (p_filter_fir_t filter_inst, const float32_t * p_mem, const float32_t * p_a, const uint32_t order, const float32_t init_value);
 filter_status_t filter_fir_is_init      (p_filter_fir_t filter_inst, bool * const p_is_init);
 filter_status_t filter_fir_hndl         (p_filter_fir_t filter_inst, const float32_t in, float32_t * const p_out);
 filter_status_t filter_fir_reset        (p_filter_fir_t filter_inst, const float32_t rst_val);

@@ -36,8 +36,6 @@
 #include <math.h>
 #include <assert.h>
 
-#include "middleware/ring_buffer/src/ring_buffer.h"
-
 /**
  *     Compatibility check with RING_BUFFER
  *
@@ -48,17 +46,6 @@ _Static_assert( 3 == RING_BUFFER_VER_MAJOR );
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
-
-/**
- *     FIR Filter data
- */
-typedef struct filter_fir_s
-{
-    p_ring_buffer_t   p_x;          /**<Previous values of input filter */
-    float32_t       * p_a;          /**<Filter coefficients */
-    uint32_t          order;        /**<Number of FIR filter taps - order of filter */
-    bool              is_init;      /**<Filter instance initialization success flag */
-} filter_fir_t;
 
 /**
  *     IIR Filter data
@@ -1166,65 +1153,122 @@ filter_status_t filter_bool_fs_get(p_filter_bool_t filter_inst, float32_t * cons
 ////////////////////////////////////////////////////////////////////////////////
 filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order, const float32_t init_value)
 {
-    filter_status_t         status      = eFILTER_OK;
-    ring_buffer_status_t    buf_status  = eRING_BUFFER_OK;
+    if ( NULL == p_filter_inst ) return eFILTER_ERROR_INST;
+
+    // Check if that instance is already allocated
+    // By meaning that this buffer instance was initialised before...
+    if ( NULL != *p_filter_inst ) return eFILTER_ERROR_INIT;
+
+    // Check args
+    if (( NULL == p_a ) || ( order == 0 ))
+    {
+        return eFILTER_ERROR_INIT;
+    }
+
+    // Allocate filter space
+    *p_filter_inst = calloc( 1U, sizeof( filter_fir_t ));
+
+    // Check allocation
+    if ( NULL == *p_filter_inst )
+    {
+        return eFILTER_ERROR_MEM;
+    }
+
+    // Allocate filter coefficient memory
+    (*p_filter_inst)->p_a = calloc( 1U, order * sizeof(float32_t));
+
+    // Check allocation
+    if ( NULL == (*p_filter_inst)->p_a )
+    {
+        return eFILTER_ERROR_MEM;
+    }
+
+    // Setup sample buffer
+    ring_buffer_attr_t buf_attr =
+    {
+        .name       = NULL,
+        .override   = true,
+        .item_size  = sizeof( float32_t )
+    };
+
+    // Allocate buffer memory
+    buf_attr.p_mem = calloc( 1U, ( order * sizeof(float32_t)));
+
+    // Create ring buffer for sample memory handling
+    if ( eRING_BUFFER_OK == ring_buffer_init_static( &(*p_filter_inst)->buf_x, order, &buf_attr ))
+    {
+        // Get filter coefficient & order
+        memcpy( (*p_filter_inst)->p_a, p_a, order * sizeof( float32_t ));
+        (*p_filter_inst)->order = order;
+
+        // Fill buffer with initial value
+        filter_buf_fill( &(*p_filter_inst)->buf_x, init_value );
+
+        // Init success
+        (*p_filter_inst)->is_init = true;
+        return eFILTER_OK;
+    }
+    else
+    {
+        return eFILTER_ERROR;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*   Initialize statically FIR filter
+*
+* @note     Filter order cannot be changed later!
+*
+* @note     Do not change "p_mem" and "p_a" memory after initialization,
+*           as they are used for filtering purposes!
+*
+* @note     Filter memory size must be equal to "order * sizeof(float32_t)"!
+*
+* @param[in]    p_filter_inst   - Pointer to FIR filter instance
+* @param[in]    p_mem           - Filter memory
+* @param[in]    p_a             - FIR coefficients
+* @param[in]    order           - Number of taps
+* @return       status          - Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+filter_status_t filter_fir_init_static(p_filter_fir_t filter_inst, const float32_t * p_mem, const float32_t * p_a, const uint32_t order, const float32_t init_value)
+{
+    if ( NULL == filter_inst ) return eFILTER_ERROR_INST;
+
+    // Check args
+    if (( NULL == p_mem ) || ( NULL == p_a ) || ( order == 0 ))
+    {
+        return eFILTER_ERROR_INIT;
+    }
+
+    // Store filter properties
+    filter_inst->p_a = (float32_t*) p_a;
+    filter_inst->order = order;
 
     // Setup sample buffer
     const ring_buffer_attr_t buf_attr =
     {
         .name       = NULL,
-        .p_mem      = NULL,    // dynamic allocation
+        .p_mem      = (float32_t*) p_mem,
         .override   = true,
         .item_size  = sizeof( float32_t )
     };
 
-    if  (   ( NULL != p_filter_inst )
-        &&  ( order > 0UL )
-        &&  ( NULL != p_a ))
+    // Create ring buffer for sample memory handling
+    if ( eRING_BUFFER_OK == ring_buffer_init_static( &filter_inst->buf_x, order, &buf_attr ))
     {
-        // Allocate filter space
-        *p_filter_inst = calloc( 1U, sizeof( filter_fir_t ));
+        // Fill buffer with initial value
+        filter_buf_fill( &filter_inst->buf_x, init_value );
 
-        // Allocation succeed
-        if ( NULL != *p_filter_inst )
-        {
-            // Allocate filter coefficient memory
-            (*p_filter_inst)->p_a = calloc( 1U, order * sizeof(float32_t));
-
-            // Create ring buffer
-            buf_status = ring_buffer_init( &(*p_filter_inst)->p_x, order, &buf_attr );
-
-            // Ring buffer created
-            // and filter coefficient memory allocation succeed
-            if  (   ( eRING_BUFFER_OK == buf_status )
-                &&  ( NULL != (*p_filter_inst)->p_a ))
-            {
-                // Get filter coefficient & order
-                memcpy( (*p_filter_inst)->p_a, p_a, order * sizeof( float32_t ));
-                (*p_filter_inst)->order = order;
-
-                // Fill buffer with initial value
-                filter_buf_fill( (*p_filter_inst)->p_x, init_value );
-
-                // Init success
-                (*p_filter_inst)->is_init = true;
-            }
-            else
-            {
-                status = eFILTER_ERROR;
-            }
-        }
-        else
-        {
-            status = eFILTER_ERROR;
-        }
+        // Init success
+        filter_inst->is_init = true;
+        return eFILTER_OK;
     }
     else
     {
-        status = eFILTER_ERROR;
+        return eFILTER_ERROR;
     }
-
-    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1290,13 +1334,13 @@ filter_status_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in, 
         if ( true == filter_inst->is_init )
         {
             // Add new sample to buffer
-            ring_buffer_add( filter_inst->p_x, (float32_t*) &in );
+            ring_buffer_add( &filter_inst->buf_x, (float32_t*) &in );
 
             // Make convolution
             for ( uint32_t i = 0U; i < filter_inst->order; i++ )
             {
                 // Get buffer value
-                ring_buffer_get_by_index( filter_inst->p_x, (float32_t*) &buf_val,  (int32_t)(( -i ) - 1U ));
+                ring_buffer_get_by_index( &filter_inst->buf_x, (float32_t*) &buf_val,  (int32_t)(( -i ) - 1U ));
 
                 // Calculate convolution
                 *p_out += ( filter_inst->p_a[i] * buf_val );
@@ -1326,10 +1370,10 @@ filter_status_t filter_fir_reset(p_filter_fir_t filter_inst, const float32_t rst
         if ( true == filter_inst->is_init )
         {
             // First reset buffer
-            (void) ring_buffer_reset( filter_inst->p_x );
+            (void) ring_buffer_reset( &filter_inst->buf_x );
 
             // Fill buffer with reset value
-            filter_buf_fill( filter_inst->p_x, rst_value );
+            filter_buf_fill( &filter_inst->buf_x, rst_value );
         }
         else
         {
