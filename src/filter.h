@@ -112,11 +112,6 @@ typedef struct
 typedef filter_fir_t * p_filter_fir_t;
 
 /**
- *     IIR filter instance type
- */
-typedef struct filter_iir_s * p_filter_iir_t;
-
-/**
  *  IIR coefficients
  */
 typedef struct
@@ -126,6 +121,18 @@ typedef struct
     uint32_t    num_of_pole;    /**<Number of poles */
     uint32_t    num_of_zero;    /**<Number of zeros */
 } filter_iir_coeff_t;
+
+/**
+ *     IIR filter instance type
+ */
+typedef struct
+{
+    ring_buffer_t       buf_y;      /**<Previous values of filter outputs */
+    ring_buffer_t       buf_x;      /**<Previous values of filter inputs*/
+    filter_iir_coeff_t  coeff;      /**<Filter coefficients */
+    bool                is_init;    /**<Filter instance initialization success flag */
+} filter_iir_t;
+typedef filter_iir_t * p_filter_iir_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -172,6 +179,7 @@ filter_status_t filter_fir_coeff_get    (p_filter_fir_t filter_inst, float32_t *
 
 // IIR filter API
 filter_status_t filter_iir_init         (p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff);
+filter_status_t filter_iir_init_static  (p_filter_iir_t filter_inst, const float32_t * p_mem, const filter_iir_coeff_t * const p_coeff);
 filter_status_t filter_iir_is_init      (p_filter_iir_t filter_inst, bool * const p_is_init);
 filter_status_t filter_iir_hndl         (p_filter_iir_t filter_inst, const float32_t in, float32_t * const p_out);
 filter_status_t filter_iir_reset        (p_filter_iir_t filter_inst, const float32_t rst_val);
