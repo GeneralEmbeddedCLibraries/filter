@@ -39,67 +39,78 @@ root/middleware/filter/"module_space"
 
 ## **RC (Low-Pass) Filter API**
 
-| API Functions | Description | Prototype |
-| --- | ----------- | ----- |
-| **filter_rc_init**        | Initialization of RC filter           | filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value) |
-| **filter_rc_init_static** | Static initialization of RC filter    | filter_status_t filter_rc_init_static(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value) |
-| **filter_rc_is_init**     | Get RC filter initialization state    | filter_status_t filter_rc_is_init(p_filter_rc_t filter_inst, bool * const p_is_init) |
-| **filter_rc_hndl**        | Handle RC filter                      | filter_status_t filter_rc_hndl(p_filter_rc_t filter_inst, const float32_t in, float32_t * const p_out) |
-| **filter_rc_reset**       | Reset RC filter                       | filter_status_t filter_rc_reset(p_filter_rc_t filter_inst, const float32_t rst_value) |
-| **filter_rc_fc_set**      | Set RC filter cutoff frequency        | filter_status_t filter_rc_fc_set(p_filter_rc_t filter_inst, const float32_t fc) |
-| **filter_rc_fc_get**      | Get RC filter cutoff frequency        | filter_status_t filter_rc_fc_get(p_filter_rc_t filter_inst, float32_t * const p_fc) |
-| **filter_rc_fs_get**      | Get RC filter sample frequency        | filter_status_t filter_rc_fs_get(p_filter_rc_t filter_inst, float32_t * const p_fs) |
+| API Function               | Description                          | Prototype |
+|--------------------------- |--------------------------------------|-----------|
+| **filter_rc_init**         | Initialization of RC filter          | `filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value)` |
+| **filter_rc_init_static**  | Static initialization of RC filter   | `filter_status_t filter_rc_init_static(p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value)` |
+| **filter_rc_is_init**      | Get RC initialization state          | `bool filter_rc_is_init(p_filter_rc_t filter_inst)` |
+| **filter_rc_hndl**         | Process one sample through RC        | `float32_t filter_rc_hndl(p_filter_rc_t filter_inst, const float32_t in)` |
+| **filter_rc_reset**        | Reset RC filter state                | `filter_status_t filter_rc_reset(p_filter_rc_t filter_inst, const float32_t rst_value)` |
+| **filter_rc_set_fc**       | Set RC cutoff frequency              | `filter_status_t filter_rc_set_fc(p_filter_rc_t filter_inst, const float32_t fc)` |
+| **filter_rc_get_fc**       | Get RC cutoff frequency              | `float32_t filter_rc_get_fc(p_filter_rc_t filter_inst)` |
+| **filter_rc_get_fs**       | Get RC sample rate                   | `float32_t filter_rc_get_fs(p_filter_rc_t filter_inst)` |
 
 ## **CR (High-Pass) Filter API**
 
-| API Functions | Description | Prototype |
-| --- | ----------- | ----- |
-| **filter_cr_init**        | Initialization of RC filter           | filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order) |
-| **filter_cr_init_static** | Static initialization of RC filter    | filter_status_t filter_cr_init_static(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order) |
-| **filter_cr_is_init**     | Get CR filter initialization state    | filter_status_t filter_cr_is_init(p_filter_cr_t filter_inst, bool * const p_is_init) |
-| **filter_cr_hndl**        | Handle CR filter                      | filter_status_t filter_cr_hndl(p_filter_cr_t filter_inst, const float32_t in, float32_t * const p_out) |
-| **filter_cr_reset**       | Reset CR filter                       | filter_status_t filter_cr_reset(p_filter_cr_t filter_inst, const float32_t rst_value) |
-| **filter_cr_fc_set**      | Set CR filter cutoff frequency        | filter_status_t filter_cr_fc_set(p_filter_cr_t filter_inst, const float32_t fc) |
-| **filter_cr_fc_get**      | Get CR filter cutoff frequency        | filter_status_t filter_cr_fc_get(p_filter_cr_t filter_inst, float32_t * const p_fc) |
-| **filter_cr_fs_get**      | Get CR filter sample frequency        | filter_status_t filter_cr_fs_get(p_filter_cr_t filter_inst, float32_t * const p_fs) |
+| API Function               | Description                          | Prototype |
+|--------------------------- |--------------------------------------|-----------|
+| **filter_cr_init**         | Initialization of CR filter          | `filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order)` |
+| **filter_cr_init_static**  | Static initialization of CR filter   | `filter_status_t filter_cr_init_static(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order)` |
+| **filter_cr_is_init**      | Get CR initialization state          | `bool filter_cr_is_init(p_filter_cr_t filter_inst)` |
+| **filter_cr_hndl**         | Process one sample through CR        | `float32_t filter_cr_hndl(p_filter_cr_t filter_inst, const float32_t in)` |
+| **filter_cr_reset**        | Reset CR filter state                | `filter_status_t filter_cr_reset(p_filter_cr_t filter_inst)` |
+| **filter_cr_set_fc**       | Set CR cutoff frequency              | `filter_status_t filter_cr_set_fc(p_filter_cr_t filter_inst, const float32_t fc)` |
+| **filter_cr_get_fc**       | Get CR cutoff frequency              | `float32_t filter_cr_get_fc(p_filter_cr_t filter_inst)` |
+| **filter_cr_get_fs**       | Get CR sample rate                   | `float32_t filter_cr_get_fs(p_filter_cr_t filter_inst)` |
 
 ## **Boolean (Debounce) LPF Filter API**
 
-| API Functions | Description | Prototype |
-| --- | ----------- | ----- |
-| **filter_bool_init**        | Initialization of RC filter           | filter_status_t filter_bool_init(p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t comp_lvl) |
-| **filter_bool_init_static** | Static initialization of RC filter     | filter_status_t filter_bool_init_static(p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t comp_lvl) |
-| **filter_bool_is_init**     | Get Boolean filter initialization state    | filter_status_t filter_bool_is_init(p_filter_bool_t filter_inst, bool * const p_is_init) |
-| **filter_bool_hndl**        | Handle Boolean filter                      | filter_status_t filter_bool_hndl(p_filter_bool_t filter_inst, const float32_t in, float32_t * const p_out) |
-| **filter_bool_reset**       | Reset Boolean filter                       | filter_status_t filter_bool_reset(p_filter_bool_t filter_inst, const float32_t rst_value) |
-| **filter_bool_fc_set**      | Set Boolean filter cutoff frequency        | filter_status_t filter_bool_fc_set(p_filter_bool_t filter_inst, const float32_t fc) |
-| **filter_bool_fc_get**      | Get Boolean filter cutoff frequency        | filter_status_t filter_bool_fc_get(p_filter_bool_t filter_inst, float32_t * const p_fc) |
-| **filter_bool_fs_get**      | Get Boolean filter sample frequency        | filter_status_t filter_bool_fs_get(p_filter_bool_t filter_inst, float32_t * const p_fs) |
-
+| API Function                  | Description                               | Prototype |
+|------------------------------ |-------------------------------------------|-----------|
+| **filter_bool_init**          | Initialization of Boolean LPF + Schmitt   | `filter_status_t filter_bool_init(p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)` |
+| **filter_bool_init_static**   | Static initialization of Boolean filter   | `filter_status_t filter_bool_init_static(p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl)` |
+| **filter_bool_is_init**       | Get Boolean filter initialization state   | `bool filter_bool_is_init(p_filter_bool_t filter_inst)` |
+| **filter_bool_hndl**          | Process one sample; returns debounced bit | `bool filter_bool_hndl(p_filter_bool_t filter_inst, const bool in)` |
+| **filter_bool_reset**         | Reset Boolean filter state                | `filter_status_t filter_bool_reset(p_filter_bool_t filter_inst)` |
+| **filter_bool_set_fc**        | Set Boolean LPF cutoff frequency          | `filter_status_t filter_bool_set_fc(p_filter_bool_t filter_inst, const float32_t fc)` |
+| **filter_bool_get_fc**        | Get Boolean LPF cutoff frequency          | `float32_t filter_bool_get_fc(p_filter_bool_t filter_inst)` |
+| **filter_bool_get_fs**        | Get Boolean LPF sample rate               | `float32_t filter_bool_get_fs(p_filter_bool_t filter_inst)` |
 
 ## **FIR (Finite Impulse Response) Filter API**
 
-| API Functions | Description | Prototype |
-| --- | ----------- | ----- |
-| **filter_fir_init**       | Initialization of FIR filter          | filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order) |
-| **filter_fir_init_static** | Static initialization of FIR filter  | filter_status_t filter_fir_init_static(p_filter_fir_t filter_inst, const float32_t * p_a, const uint32_t order) |
-| **filter_fir_is_init**    | Get FIR filter initialization state   | filter_status_t filter_fir_is_init(p_filter_fir_t filter_inst, bool * const p_is_init) |
-| **filter_fir_hndl**       | Handle FIR filter                     | filter_status_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in, float32_t * const p_out) |
-| **filter_fir_reset**      | Reset FIR filter                      | filter_status_t filter_fir_reset(p_filter_fir_t filter_inst, const float32_t rst_val) |
-| **filter_fir_coeff_set**  | Set FIR filter coefficients           | filter_status_t filter_fir_coeff_set(p_filter_fir_t filter_inst, const float32_t * const p_a) |
-| **filter_fir_coeff_get**  | Get FIR filter coefficients           | filter_status_t filter_fir_coeff_get(p_filter_fir_t filter_inst, float32_t ** const pp_a) |
+| API Function               | Description                          | Prototype |
+|--------------------------- |--------------------------------------|-----------|
+| **filter_fir_init**        | Initialization of FIR filter         | `filter_status_t filter_fir_init(p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order, const float32_t init_value)` |
+| **filter_fir_init_static** | Static initialization of FIR filter  | `filter_status_t filter_fir_init_static(p_filter_fir_t filter_inst, const float32_t * p_mem, const float32_t * p_a, const uint32_t order, const float32_t init_value)` |
+| **filter_fir_is_init**     | Get FIR initialization state         | `bool filter_fir_is_init(p_filter_fir_t filter_inst)` |
+| **filter_fir_hndl**        | Process one sample through FIR       | `float32_t filter_fir_hndl(p_filter_fir_t filter_inst, const float32_t in)` |
+| **filter_fir_reset**       | Reset FIR filter state               | `filter_status_t filter_fir_reset(p_filter_fir_t filter_inst, const float32_t rst_val)` |
+| **filter_fir_set_coeff**   | Set FIR coefficients                 | `filter_status_t filter_fir_set_coeff(p_filter_fir_t filter_inst, const float32_t * const p_a)` |
+| **filter_fir_get_coeff**   | Get FIR coefficients                 | `const float32_t * filter_fir_get_coeff(p_filter_fir_t filter_inst)` |
 
 ## **IIR (Infinite Impulse Response) Filter API**
 
-| API Functions | Description | Prototype |
-| --- | ----------- | ----- |
-| **filter_iir_init**       | Initialization of IIR filter                  | filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff) |
-| **filter_iir_init_static** | Static initialization of IIR filter          | filter_status_t filter_iir_init_static(p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff) |
-| **filter_iir_is_init**    | Get IIR filter initialization state           | filter_status_t filter_iir_is_init(p_filter_iir_t filter_inst, bool * const p_is_init) |
-| **filter_iir_hndl**       | Handle IIR filter                             | filter_status_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in, float32_t * const p_out) |
-| **filter_iir_reset**      | Reset IIR filter                              | filter_status_t filter_iir_reset(p_filter_iir_t filter_inst, const float32_t rst_val) |
-| **filter_iir_coeff_set**  | Set IIR filter zeros & poles                  | filter_status_t filter_iir_coeff_set(p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff) |
-| **filter_iir_coeff_get**  | Get IIR filter zeros & poles                  | filter_status_t filter_iir_coeff_get(p_filter_iir_t filter_inst, filter_iir_coeff_t ** const pp_coeff) |
+| API Function                 | Description                          | Prototype |
+|----------------------------- |--------------------------------------|-----------|
+| **filter_iir_init**          | Initialization of IIR filter         | `filter_status_t filter_iir_init(p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff)` |
+| **filter_iir_init_static**   | Static initialization of IIR filter  | `filter_status_t filter_iir_init_static(p_filter_iir_t filter_inst, const float32_t * p_mem, const filter_iir_coeff_t * const p_coeff)` |
+| **filter_iir_is_init**       | Get IIR initialization state         | `bool filter_iir_is_init(p_filter_iir_t filter_inst)` |
+| **filter_iir_hndl**          | Process one sample through IIR       | `float32_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in)` |
+| **filter_iir_reset**         | Reset IIR filter state               | `filter_status_t filter_iir_reset(p_filter_iir_t filter_inst, const float32_t rst_val)` |
+| **filter_iir_set_coeff**     | Set IIR zeros & poles                | `filter_status_t filter_iir_set_coeff(p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff)` |
+| **filter_iir_get_coeff**     | Get IIR zeros & poles                | `const filter_iir_coeff_t * filter_iir_get_coeff(p_filter_iir_t filter_inst)` |
+
+## **IIR Helper Functions**
+
+| Helper Function                          | Description                        | Prototype |
+|------------------------------------------|------------------------------------|-----------|
+| **filter_iir_coeff_calc_2nd_lpf**        | 2nd-order low-pass (cookbook)      | `filter_status_t filter_iir_coeff_calc_2nd_lpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)` |
+| **filter_iir_coeff_calc_2nd_hpf**        | 2nd-order high-pass (cookbook)     | `filter_status_t filter_iir_coeff_calc_2nd_hpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)` |
+| **filter_iir_coeff_calc_2nd_bpf**        | 2nd-order notch (band-stop)        | `filter_status_t filter_iir_coeff_calc_2nd_bpf(const float32_t fc, const float32_t r, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero)` |
+| **filter_iir_calc_lpf_gain**             | DC gain for LPF section            | `float32_t filter_iir_calc_lpf_gain(const filter_iir_coeff_t * const p_coeff)` |
+| **filter_iir_calc_hpf_gain**             | High-frequency gain for HPF        | `float32_t filter_iir_calc_hpf_gain(const filter_iir_coeff_t * const p_coeff)` |
+| **filter_iir_coeff_to_unity_gain_lpf**   | Normalize LPF to unity DC gain     | `filter_status_t filter_iir_coeff_to_unity_gain_lpf(filter_iir_coeff_t * const p_coeff)` |
+| **filter_iir_coeff_to_unity_gain_hpf**   | Normalize HPF to unity HF gain     | `filter_status_t filter_iir_coeff_to_unity_gain_hpf(filter_iir_coeff_t * const p_coeff)` |
 
 ## **IIR Filter Helper Functions API**
 
