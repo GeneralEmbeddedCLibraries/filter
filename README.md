@@ -112,19 +112,6 @@ root/middleware/filter/"module_space"
 | **filter_iir_coeff_to_unity_gain_lpf**   | Normalize LPF to unity DC gain     | `filter_status_t filter_iir_coeff_to_unity_gain_lpf(filter_iir_coeff_t * const p_coeff)` |
 | **filter_iir_coeff_to_unity_gain_hpf**   | Normalize HPF to unity HF gain     | `filter_status_t filter_iir_coeff_to_unity_gain_hpf(filter_iir_coeff_t * const p_coeff)` |
 
-## **IIR Filter Helper Functions API**
-
-| API Functions | Description | Prototype |
-| --- | ----------- | ----- |
-| **filter_iir_coeff_calc_2nd_lpf**       | Calculate 2nd order LPF zeros & poles   | filter_status_t filter_iir_coeff_calc_2nd_lpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero) |
-| **filter_iir_coeff_calc_2nd_hpf**       | Calculate 2nd order HPF zeros & poles   | filter_status_t filter_iir_coeff_calc_2nd_hpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero) |
-| **filter_iir_coeff_calc_2nd_bpf**       | Calculate 2nd order BPF (band-pass) zeros & poles   | filter_status_t filter_iir_coeff_calc_2nd_bpf(const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero) |
-| **filter_iir_calc_lpf_gain**            | Calculate 2nd order LPF gain at 0Hz             | float32_t filter_iir_calc_lpf_gain(const filter_iir_coeff_t * const p_coeff) |
-| **filter_iir_calc_hpf_gain**            | Calculate 2nd order HPF gain at Nyquist freq    | float32_t filter_iir_calc_hpf_gain(const filter_iir_coeff_t * const p_coeff) |
-| **filter_iir_coeff_to_unity_gain_lpf**  | Recalculate zeros to normalize gain of IIR LPF  | filter_status_t filter_iir_coeff_to_unity_gain_lpf(filter_iir_coeff_t * const p_coeff) |
-| **filter_iir_coeff_to_unity_gain_lpf**  | Recalculate zeros to normalize gain of IIR HPF  | filter_status_t filter_iir_coeff_to_unity_gain_hpf(filter_iir_coeff_t * const p_coeff) |
-
-
  ## **RC/CR filters**
  RC/CR filter C implementation support also cascading filter but user shall notice that cascading two RC or CR filters does not have same characteristics as IIR 2nd order filter. To define 2nd order IIR filter beside cutoff frequency (fc) also damping factors ($\zeta$) must be defined.
 
