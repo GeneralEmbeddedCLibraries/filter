@@ -6,8 +6,9 @@
 *@file      filter.h
 *@brief     Various filter designs
 *@author    Ziga Miklosic
-*@date      21.01.2025
-*@version   V2.1.0
+*@email     ziga.miklosic@gmail.com
+*@date      30.08.2025
+*@version   V3.0.0
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -26,6 +27,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// Common goods
+#include "common/utils/src/utils.h"
+
+// Middleware
+#include "middleware/ring_buffer/src/ring_buffer.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,48 +40,77 @@
 /**
  *     Module version
  */
-#define FILTER_VER_MAJOR        ( 2 )
-#define FILTER_VER_MINOR        ( 1 )
+#define FILTER_VER_MAJOR        ( 3 )
+#define FILTER_VER_MINOR        ( 0 )
 #define FILTER_VER_DEVELOP      ( 0 )
 
 /**
  *     Filter status
  */
-typedef enum
+enum
 {
-    eFILTER_OK      = 0x00U,        /**<Normal operation */
-    eFILTER_ERROR   = 0x01U,        /**<General error */
-} filter_status_t;
+    eFILTER_OK          = 0x00U,    /**<Normal operation */
+    eFILTER_ERROR       = 0x01U,    /**<General error */
+    eFILTER_ERROR_INIT  = 0x02U,    /**<Initialization error */
+    eFILTER_ERROR_MEM   = 0x04U,    /**<Memory allocation error */
+    eFILTER_ERROR_INST  = 0x08U,    /**<Buffer instance missing */
+};
+typedef uint8_t filter_status_t;
 
 /**
  *     RC filter instance type
  */
-typedef struct filter_rc_s * p_filter_rc_t;
+typedef struct
+{
+    float32_t * p_y;        /**<Output of filter + previous values */
+    float32_t   alpha;      /**<Filter smoothing factor */
+    float32_t   fc;         /**<Filter cutoff frequency */
+    float32_t   fs;         /**<Filter sampling frequency */
+    uint8_t     order;      /**<Filter order - number of cascaded filter */
+    bool        is_init;    /**<Filter instance initialization success flag */
+} filter_rc_t;
+typedef filter_rc_t * p_filter_rc_t;
 
 /**
  *     CR filter instance type
  */
-typedef struct filter_cr_s * p_filter_cr_t;
-
-/**
- *     FIR filter instance type
- */
-typedef struct filter_fir_s * p_filter_fir_t;
-
-/**
- *     IIR filter instance type
- */
-typedef struct filter_iir_s * p_filter_iir_t;
+typedef struct
+{
+    float32_t * p_y;        /**<Output of filter + previous values */
+    float32_t * p_x;        /**<Input of filter + previous values */
+    float32_t   alpha;      /**<Filter smoothing factor */
+    float32_t   fc;         /**<Filter cutoff frequency */
+    float32_t   fs;         /**<Filter sampling frequency */
+    uint8_t     order;      /**<Filter order - number of cascaded filter */
+    bool        is_init;    /**<Filter instance initialization success flag */
+} filter_cr_t;
+typedef filter_cr_t * p_filter_cr_t;
 
 /**
  *     Boolean filter instance type
  */
-typedef struct filter_bool_s * p_filter_bool_t;
+typedef struct
+{
+    filter_rc_t     lpf;        /**<Low pass filter */
+    float32_t       lpf_mem;    /**<LPF memory buffer */
+    float32_t       comp_lvl;   /**<Comparator trip level - symmetrical on 0.5 */
+    bool            y;          /**<Output value of comparator/filter */
+    bool            is_init;    /**<Filter instance initialization success flag */
+} filter_bool_t;
+typedef filter_bool_t * p_filter_bool_t;
 
 /**
- *  32-bit floating data type definition
+ *     FIR filter instance type
  */
-typedef float float32_t;
+typedef struct
+{
+    ring_buffer_t     buf_x;        /**<Previous values of input filter */
+    float32_t       * p_a;          /**<Filter coefficients */
+    uint32_t          order;        /**<Number of FIR filter taps - order of filter */
+    bool              is_init;      /**<Filter instance initialization success flag */
+} filter_fir_t;
+
+typedef filter_fir_t * p_filter_fir_t;
 
 /**
  *  IIR coefficients
@@ -87,52 +123,69 @@ typedef struct
     uint32_t    num_of_zero;    /**<Number of zeros */
 } filter_iir_coeff_t;
 
+/**
+ *     IIR filter instance type
+ */
+typedef struct
+{
+    ring_buffer_t       buf_y;      /**<Previous values of filter outputs */
+    ring_buffer_t       buf_x;      /**<Previous values of filter inputs*/
+    filter_iir_coeff_t  coeff;      /**<Filter coefficients */
+    bool                is_init;    /**<Filter instance initialization success flag */
+} filter_iir_t;
+typedef filter_iir_t * p_filter_iir_t;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
 
 // RC filter API
 filter_status_t filter_rc_init          (p_filter_rc_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value);
-filter_status_t filter_rc_is_init       (p_filter_rc_t filter_inst, bool * const p_is_init);
-filter_status_t filter_rc_hndl          (p_filter_rc_t filter_inst, const float32_t in, float32_t * const p_out);
+filter_status_t filter_rc_init_static   (p_filter_rc_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order, const float32_t init_value);
+bool            filter_rc_is_init       (p_filter_rc_t filter_inst);
+float32_t       filter_rc_hndl          (p_filter_rc_t filter_inst, const float32_t in);
 filter_status_t filter_rc_reset         (p_filter_rc_t filter_inst, const float32_t rst_value);
-filter_status_t filter_rc_fc_set        (p_filter_rc_t filter_inst, const float32_t fc);
-filter_status_t filter_rc_fc_get        (p_filter_rc_t filter_inst, float32_t * const p_fc);
-filter_status_t filter_rc_fs_get        (p_filter_rc_t filter_inst, float32_t * const p_fs);
+filter_status_t filter_rc_set_fc        (p_filter_rc_t filter_inst, const float32_t fc);
+float32_t       filter_rc_get_fc        (p_filter_rc_t filter_inst);
+float32_t       filter_rc_get_fs        (p_filter_rc_t filter_inst);
 
 // CR filter API
 filter_status_t filter_cr_init          (p_filter_cr_t * p_filter_inst, const float32_t fc, const float32_t fs, const uint8_t order);
-filter_status_t filter_cr_is_init       (p_filter_cr_t filter_inst, bool * const p_is_init);
-filter_status_t filter_cr_hndl          (p_filter_cr_t filter_inst, const float32_t in, float32_t * const p_out);
+filter_status_t filter_cr_init_static   (p_filter_cr_t filter_inst, const float32_t fc, const float32_t fs, const uint8_t order);
+bool            filter_cr_is_init       (p_filter_cr_t filter_inst);
+float32_t       filter_cr_hndl          (p_filter_cr_t filter_inst, const float32_t in);
 filter_status_t filter_cr_reset         (p_filter_cr_t filter_inst);
-filter_status_t filter_cr_fc_set        (p_filter_cr_t filter_inst, const float32_t fc);
-filter_status_t filter_cr_fc_get        (p_filter_cr_t filter_inst, float32_t * const p_fc);
-filter_status_t filter_cr_fs_get        (p_filter_cr_t filter_inst, float32_t * const p_fs);
+filter_status_t filter_cr_set_fc        (p_filter_cr_t filter_inst, const float32_t fc);
+float32_t       filter_cr_get_fc        (p_filter_cr_t filter_inst);
+float32_t       filter_cr_get_fs        (p_filter_cr_t filter_inst);
 
 // Boolean (debouncing) LPF filter API
 filter_status_t filter_bool_init        (p_filter_bool_t * p_filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl);
-filter_status_t filter_bool_is_init     (p_filter_bool_t filter_inst, bool * const p_is_init);
-filter_status_t filter_bool_hndl        (p_filter_bool_t filter_inst, const bool in, bool * const p_out);
+filter_status_t filter_bool_init_static (p_filter_bool_t filter_inst, const float32_t fc, const float32_t fs, const float32_t comp_lvl);
+bool            filter_bool_is_init     (p_filter_bool_t filter_inst);
+bool            filter_bool_hndl        (p_filter_bool_t filter_inst, const bool in);
 filter_status_t filter_bool_reset       (p_filter_bool_t filter_inst);
-filter_status_t filter_bool_fc_set      (p_filter_bool_t filter_inst, const float32_t fc);
-filter_status_t filter_bool_fc_get      (p_filter_bool_t filter_inst, float32_t * const p_fc);
-filter_status_t filter_bool_fs_get      (p_filter_bool_t filter_inst, float32_t * const p_fs);
+filter_status_t filter_bool_set_fc      (p_filter_bool_t filter_inst, const float32_t fc);
+float32_t       filter_bool_get_fc      (p_filter_bool_t filter_inst);
+float32_t       filter_bool_get_fs      (p_filter_bool_t filter_inst);
 
 // FIR filter API
-filter_status_t filter_fir_init         (p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order, const float32_t init_value);
-filter_status_t filter_fir_is_init      (p_filter_fir_t filter_inst, bool * const p_is_init);
-filter_status_t filter_fir_hndl         (p_filter_fir_t filter_inst, const float32_t in, float32_t * const p_out);
-filter_status_t filter_fir_reset        (p_filter_fir_t filter_inst, const float32_t rst_val);
-filter_status_t filter_fir_coeff_set    (p_filter_fir_t filter_inst, const float32_t * const p_a);
-filter_status_t filter_fir_coeff_get    (p_filter_fir_t filter_inst, float32_t ** const pp_a);
+filter_status_t   filter_fir_init         (p_filter_fir_t * p_filter_inst, const float32_t * p_a, const uint32_t order, const float32_t init_value);
+filter_status_t   filter_fir_init_static  (p_filter_fir_t filter_inst, const float32_t * p_mem, const float32_t * p_a, const uint32_t order, const float32_t init_value);
+bool              filter_fir_is_init      (p_filter_fir_t filter_inst);
+float32_t         filter_fir_hndl         (p_filter_fir_t filter_inst, const float32_t in);
+filter_status_t   filter_fir_reset        (p_filter_fir_t filter_inst, const float32_t rst_val);
+filter_status_t   filter_fir_set_coeff    (p_filter_fir_t filter_inst, const float32_t * const p_a);
+const float32_t * filter_fir_get_coeff    (p_filter_fir_t filter_inst);
 
 // IIR filter API
-filter_status_t filter_iir_init         (p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff);
-filter_status_t filter_iir_is_init      (p_filter_iir_t filter_inst, bool * const p_is_init);
-filter_status_t filter_iir_hndl         (p_filter_iir_t filter_inst, const float32_t in, float32_t * const p_out);
-filter_status_t filter_iir_reset        (p_filter_iir_t filter_inst, const float32_t rst_val);
-filter_status_t filter_iir_coeff_set    (p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff);
-filter_status_t filter_iir_coeff_get    (p_filter_iir_t filter_inst, filter_iir_coeff_t ** const pp_coeff);
+filter_status_t            filter_iir_init         (p_filter_iir_t * p_filter_inst, const filter_iir_coeff_t * const p_coeff);
+filter_status_t            filter_iir_init_static  (p_filter_iir_t filter_inst, const float32_t * p_mem, const filter_iir_coeff_t * const p_coeff);
+bool                       filter_iir_is_init      (p_filter_iir_t filter_inst);
+float32_t                  filter_iir_hndl         (p_filter_iir_t filter_inst, const float32_t in);
+filter_status_t            filter_iir_reset        (p_filter_iir_t filter_inst, const float32_t rst_val);
+filter_status_t            filter_iir_set_coeff    (p_filter_iir_t filter_inst, const filter_iir_coeff_t * const p_coeff);
+const filter_iir_coeff_t * filter_iir_get_coeff    (p_filter_iir_t filter_inst);
 
 // IIR helper functions
 filter_status_t filter_iir_coeff_calc_2nd_lpf       (const float32_t fc, const float32_t zeta, const float32_t fs, float32_t * const p_pole, float32_t * const p_zero);
