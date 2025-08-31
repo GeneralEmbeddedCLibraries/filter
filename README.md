@@ -21,7 +21,7 @@ root/middleware/ring_buffer/src/ring_buffer.h
 ### **2. Utils Module**
 [Utils](https://github.com/GeneralEmbeddedCLibraries/utils) module must take following path:
 ```
-"root/common/utils/src/utils.h"
+root/common/utils/src/utils.h
 ```
 
 ## **General Embedded C Libraries Ecosystem**
