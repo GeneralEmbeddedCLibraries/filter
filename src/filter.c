@@ -174,12 +174,22 @@ filter_status_t filter_rc_init(p_filter_rc_t * p_filter_inst, const float32_t fc
     // By meaning that this buffer instance was initialised before...
     if ( NULL != *p_filter_inst ) return eFILTER_ERROR_INIT;
 
-    // Allocate space
-    *p_filter_inst          = calloc( 1U, sizeof(filter_rc_t));
-    (*p_filter_inst)->p_y   = calloc( 1U, order * sizeof(float32_t));
+    // Allocate filter space
+    *p_filter_inst = calloc( 1U, sizeof(filter_rc_t));
 
     // Check allocation
-    if (( NULL == *p_filter_inst ) || ( NULL == (*p_filter_inst)->p_y ))
+    if ( NULL == *p_filter_inst )
+    {
+        free(*p_filter_inst);
+        *p_filter_inst = NULL;
+        return eFILTER_ERROR_MEM;
+    }
+
+    // Allocate filter memory
+    (*p_filter_inst)->p_y = calloc( 1U, order * sizeof(float32_t));
+
+    // Check allocation
+    if (  NULL == (*p_filter_inst)->p_y )
     {
         free(*p_filter_inst);
         free((*p_filter_inst)->p_y);
@@ -352,16 +362,21 @@ filter_status_t filter_rc_set_fc(p_filter_rc_t filter_inst, const float32_t fc)
     if ( fc != filter_rc_get_fc( filter_inst ))
     {
         float32_t alpha;
-
         if ( eFILTER_OK == filter_rc_calculate_alpha( fc, filter_inst->fs, &alpha ))
         {
             filter_inst->alpha = alpha;
             filter_inst->fc = fc;
             return eFILTER_OK;
         }
+        else
+        {
+            return eFILTER_ERROR;
+        }
     }
-
-    return eFILTER_ERROR;
+    else
+    {
+        return eFILTER_OK;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -428,13 +443,23 @@ filter_status_t filter_cr_init(p_filter_cr_t * p_filter_inst, const float32_t fc
     // By meaning that this buffer instance was initialised before...
     if ( NULL != *p_filter_inst ) return eFILTER_ERROR_INIT;
 
-    // Allocate space
-    *p_filter_inst          = calloc( 1U, sizeof(filter_cr_t));
-    (*p_filter_inst)->p_y   = calloc( 1U, order * sizeof(float32_t));
-    (*p_filter_inst)->p_x   = calloc( 1U, order * sizeof(float32_t));
+    // Allocate filter space
+    *p_filter_inst = calloc( 1U, sizeof(filter_cr_t));
 
     // Check if allocation succeed
-    if (( NULL == *p_filter_inst ) || ( NULL == (*p_filter_inst)->p_y ) || ( NULL == (*p_filter_inst)->p_x ))
+    if ( NULL == *p_filter_inst )
+    {
+        free(*p_filter_inst);
+        *p_filter_inst = NULL;
+        return eFILTER_ERROR_MEM;
+    }
+
+    // Allocate filter space
+    (*p_filter_inst)->p_y = calloc( 1U, order * sizeof(float32_t));
+    (*p_filter_inst)->p_x = calloc( 1U, order * sizeof(float32_t));
+
+    // Check if allocation succeed
+    if (( NULL == (*p_filter_inst)->p_y ) || ( NULL == (*p_filter_inst)->p_x ))
     {
         free(*p_filter_inst);
         free((*p_filter_inst)->p_x);
@@ -612,16 +637,21 @@ filter_status_t filter_cr_set_fc(p_filter_cr_t filter_inst, const float32_t fc)
     if ( fc != filter_cr_get_fc( filter_inst ))
     {
         float32_t alpha;
-
         if ( eFILTER_OK == filter_cr_calculate_alpha( fc, filter_inst->fs, &alpha ))
         {
             filter_inst->alpha = alpha;
             filter_inst->fc = fc;
             return eFILTER_OK;
         }
+        else
+        {
+            return eFILTER_ERROR;
+        }
     }
-
-    return eFILTER_ERROR;
+    else
+    {
+        return eFILTER_OK;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -877,10 +907,14 @@ filter_status_t filter_bool_set_fc(p_filter_bool_t filter_inst, const float32_t 
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_bool_get_fc(p_filter_bool_t filter_inst)
 {
-    if ( NULL == filter_inst )              return eFILTER_ERROR_INST;
-    if ( false == filter_inst->is_init )    return eFILTER_ERROR_INIT;
-
-    return filter_rc_get_fc( &filter_inst->lpf );
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init ))
+    {
+        return 0;
+    }
+    else
+    {
+        return filter_rc_get_fc( &filter_inst->lpf );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -893,10 +927,14 @@ float32_t filter_bool_get_fc(p_filter_bool_t filter_inst)
 ////////////////////////////////////////////////////////////////////////////////
 float32_t filter_bool_get_fs(p_filter_bool_t filter_inst)
 {
-    if ( NULL == filter_inst )              return eFILTER_ERROR_INST;
-    if ( false == filter_inst->is_init )    return eFILTER_ERROR_INIT;
-
-    return filter_rc_get_fs( &filter_inst->lpf );
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init ))
+    {
+        return 0;
+    }
+    else
+    {
+        return filter_rc_get_fs( &filter_inst->lpf );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1445,7 +1483,7 @@ float32_t filter_iir_hndl(p_filter_iir_t filter_inst, const float32_t in)
 /**
 *       Reset IIR filter buffers
 *
-* @param[in]    filter_inst - RC filter instance
+* @param[in]    filter_inst - IIR filter instance
 * @param[in]    rst_value   - Reset value
 * @return       status      - Status of operation
 */
@@ -1470,11 +1508,9 @@ filter_status_t filter_iir_reset(p_filter_iir_t filter_inst, const float32_t rst
 /**
 *       Set coefficient of IIR filter on-the-fly
 *
-* @note     It is recommended to reset filter afterwards!
-*
 * @note     Make sure to provide filter order size of coefficients!
 *
-* @param[in]    filter_inst - FIR filter instance
+* @param[in]    filter_inst - IIR filter instance
 * @param[in]    p_coeff     - New IIR filter coefficients
 * @return       status      - Status of operation
 */
@@ -1498,7 +1534,7 @@ filter_status_t filter_iir_set_coeff(p_filter_iir_t filter_inst, const filter_ii
 * @note This functions copy coefficients into place pointing by p_zero
 *       and p_pole parameter
 *
-* @param[in]    filter_inst - Pointer to FIR filter instance
+* @param[in]    filter_inst - IIR filter instance
 * @return       Filter coefficients
 */
 ////////////////////////////////////////////////////////////////////////////////
