@@ -135,6 +135,23 @@ typedef struct
 } filter_iir_t;
 typedef filter_iir_t * p_filter_iir_t;
 
+/**
+ *     Biquad filter instance type
+ */
+typedef struct
+{
+
+	float32_t 			w[2];		/**<States */
+	float32_t			b0;
+	float32_t			b1;
+	float32_t			b2;
+	float32_t			a1;
+	float32_t			a2;
+    filter_iir_coeff_t  coeff;      /**<Filter coefficients */
+    bool                is_init;    /**<Filter instance initialization success flag */
+} filter_biquad_t;
+typedef filter_biquad_t * p_filter_biquad_t;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
@@ -195,6 +212,14 @@ float32_t       filter_iir_calc_lpf_gain            (const filter_iir_coeff_t * 
 float32_t       filter_iir_calc_hpf_gain            (const filter_iir_coeff_t * const p_coeff);
 filter_status_t filter_iir_coeff_to_unity_gain_lpf  (filter_iir_coeff_t * const p_coeff);
 filter_status_t filter_iir_coeff_to_unity_gain_hpf  (filter_iir_coeff_t * const p_coeff);
+
+// Biquad functions
+filter_status_t filter_biquad_init_static		(p_filter_biquad_t filter_inst, const float32_t fc, const float32_t zeta, const float32_t fs);
+
+float32_t 		filter_biquad_hndl				(p_filter_biquad_t filter_inst, const float32_t in);
+filter_status_t filter_biquad_reset				(p_filter_biquad_t filter_inst);
+filter_status_t filter_biquad_set_coeff			(p_filter_biquad_t filter_inst, const float32_t fc, const float32_t zeta, const float32_t fs);
+
 
 #endif // __FILTER_H
 

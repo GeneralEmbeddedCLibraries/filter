@@ -1945,6 +1945,108 @@ filter_status_t filter_iir_coeff_to_unity_gain_hpf(filter_iir_coeff_t * const p_
     return status;
 }
 
+
+
+
+
+// TODO:
+
+
+static filter_status_t filter_biquad_coeff_calc_lpf(p_filter_biquad_t filter_inst, const float32_t fc, const float32_t zeta, const float32_t fs)
+{
+    if ( NULL == filter_inst ) return eFILTER_ERROR_INST;
+
+    float32_t       omega       = 0.0f;
+    float32_t       cos_omega   = 0.0f;
+    float32_t       alpha       = 0.0f;
+
+	// Check Nyquist/Shannon sampling theorem
+	if (( fc < ( fs / 2.0f )) && ( fc > 0.0f ) && ( fs > 0.0f ))
+	{
+		omega = ( 2.0f * ( (float32_t)M_PI * ( fc / fs )));
+		alpha = ( sinf( omega ) * zeta );
+		cos_omega = cosf( omega );
+
+		// Calculate zeros & poles
+		float32_t a0 = 1.0f + alpha;
+		filter_inst->b0 = (( 1.0f - cos_omega ) / 2.0f ) / a0;
+		filter_inst->b1 = ( 1.0f - cos_omega ) / a0;
+		filter_inst->b2 = (( 1.0f - cos_omega ) / 2.0f ) / a0;
+
+		filter_inst->a1 = ( -2.0f * cos_omega ) / a0;
+		filter_inst->a2 = ( 1.0f - alpha ) / a0;
+
+		return eFILTER_OK;
+	}
+	else
+	{
+		return eFILTER_ERROR;
+	}
+}
+
+
+
+filter_status_t filter_biquad_init_static(p_filter_biquad_t filter_inst, const float32_t fc, const float32_t zeta, const float32_t fs)
+{
+    if ( NULL == filter_inst ) return eFILTER_ERROR_INST;
+
+
+    filter_status_t status = eFILTER_OK;
+
+
+    status |= filter_biquad_coeff_calc_lpf( filter_inst, fc, zeta, fs );
+
+    // Initialize state history to STRICTLY zero
+    filter_inst->w[0] = 0.0f;
+    filter_inst->w[1] = 0.0f;
+
+    filter_inst->is_init = ( eFILTER_OK == status );
+
+    return eFILTER_OK;
+}
+
+
+float32_t filter_biquad_hndl(p_filter_biquad_t filter_inst, const float32_t in)
+{
+    if (( NULL == filter_inst ) || ( false == filter_inst->is_init )) return 0.0f;
+
+    // Transposed Direct Form II processing
+    float32_t output = (filter_inst->b0 * in) + filter_inst->w[0];
+
+    // Update states
+    filter_inst->w[0] = (filter_inst->b1 * in) - (filter_inst->a1 * output) + filter_inst->w[1];
+    filter_inst->w[1] = (filter_inst->b2 * in) - (filter_inst->a2 * output);
+
+    return output;
+}
+
+
+filter_status_t filter_biquad_reset(p_filter_biquad_t filter_inst)
+{
+    if ( NULL == filter_inst )              return eFILTER_ERROR_INST;
+    if ( false == filter_inst->is_init )    return eFILTER_ERROR_INIT;
+
+    filter_inst->w[0] = 0.0f;
+    filter_inst->w[1] = 0.0f;
+
+    return eFILTER_OK;
+}
+
+
+filter_status_t filter_biquad_set_coeff(p_filter_biquad_t filter_inst, const float32_t fc, const float32_t zeta, const float32_t fs)
+{
+    if ( NULL == filter_inst )              return eFILTER_ERROR_INST;
+    if ( false == filter_inst->is_init )    return eFILTER_ERROR_INIT;
+
+    filter_status_t status = eFILTER_OK;
+	status |= filter_biquad_coeff_calc_lpf( filter_inst, fc, zeta, fs );
+	status |= filter_biquad_reset( filter_inst );
+	return status;
+}
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 /**
 * @} <!-- END GROUP -->
